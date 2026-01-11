@@ -9,14 +9,16 @@ const supabase = createClient(
   config.public.supabasePublishableKey
 )
 
-const racerSeasons = ref([])
+
 const racers = ref([])
 const seasons = ref([])
-const loading = ref(true)
 const showModal = ref(false)
 const showRacerModal = ref(false)
 const showSeasonModal = ref(false)
 const editMode = ref(false)
+const racerSeasons = ref([])
+const seasonPoints = ref([])  // Add this
+const loading = ref(false)
 
 // Form data
 const form = ref({
@@ -33,6 +35,9 @@ const racerForm = ref({
 const seasonForm = ref({
   Season: ''
 })
+
+// At the top with your other refs
+
 
 // Fetch all data
 async function getRacerSeasons() {
@@ -52,10 +57,19 @@ async function getRacerSeasons() {
           Season
         )
       `)
-      .order('id', { ascending: false })
-    
+      .order('Points', { ascending: false })
+
     if (error) throw error
+
     racerSeasons.value = data || []
+
+    // Update the ref instead of a local variable
+    seasonPoints.value = racerSeasons.value.filter(element => {
+      console.log("MLD2", element.Seasons.Season)
+      return element.Seasons.Season === "S1"
+    })
+
+    console.log("SP1", seasonPoints.value)
   } catch (e) {
     console.error('Error fetching data:', e)
   } finally {
@@ -324,10 +338,10 @@ onMounted(() => {
           <thead class="bg-slate-700">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                Racer Name
+                Season
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                Season
+                Racer Name
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                 Points
@@ -339,15 +353,15 @@ onMounted(() => {
           </thead>
           <tbody class="divide-y divide-slate-700">
             <tr 
-              v-for="item in racerSeasons" 
+              v-for="item in seasonPoints" 
               :key="item.id"
               class="hover:bg-slate-700 transition-colors"
-            >
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                {{ item.Racer?.Name || 'N/A' }}
-              </td>
+              >
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                 {{ item.Seasons?.Season || 'N/A' }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                {{ item.Racer?.Name || 'N/A' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                 {{ item.Points }}
