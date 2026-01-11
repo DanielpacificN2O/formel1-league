@@ -1,7 +1,7 @@
 <template>
 <div>
   <h1 class="text-3xl font-bold  ">
-    Sardinfabrikken i Holmestrand Lukter Digg!
+    NEC Racing Series
   </h1>
 </div>
 </template>
