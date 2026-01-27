@@ -386,6 +386,16 @@ onMounted(() => {
                   <option value="S13">Season 13</option>
                   <option value="S14">Season 14</option>
                   <option value="S15">Season 15</option>
+                  <option value="S16">Season 16</option>
+                  <option value="S17">Season 17</option>
+                  <option value="S18">Season 18</option>
+                  <option value="S19">Season 19</option>
+                  <option value="S20">Season 20</option>
+                  <option value="S21">Season 21</option>
+                  <option value="S22">Season 22</option>
+                  <option value="S23">Season 23</option>
+                  <option value="S24">Season 24</option>
+                  <option value="S25">Season 25</option>
                 </select>
               </th>
               
