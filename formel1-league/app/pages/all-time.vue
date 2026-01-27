@@ -11,7 +11,7 @@ const supabase = createClient(
 
 const racerSeasons = ref([])
 const loading = ref(false)
-const sortBy = ref('wins') // 'wins' | 'points' | 'podiums' | 'poles'
+const sortBy = ref('wins')
 const sortDirection = ref('desc')
 
 
@@ -127,99 +127,75 @@ onMounted(() => {
                 Driver
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-  <button
-    @click="changeSort('wins')"
-    class="flex items-center gap-1 text-gray-300 hover:text-white"
-  >
-    Wins
-    <span v-if="sortBy === 'wins'">
-      {{ sortDirection === 'desc' ? '▼' : '▲' }}
-    </span>
-  </button>
-</th>
-
-<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-  <button
-    @click="changeSort('podiums')"
-    class="flex items-center gap-1 text-gray-300 hover:text-white"
-  >
-    Podiums
-    <span v-if="sortBy === 'podiums'">
-      {{ sortDirection === 'desc' ? '▼' : '▲' }}
-    </span>
-  </button>
-</th>
-
-<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-  <button
-    @click="changeSort('poles')"
-    class="flex items-center gap-1 text-gray-300 hover:text-white"
-  >
-    Poles
-    <span v-if="sortBy === 'poles'">
-      {{ sortDirection === 'desc' ? '▼' : '▲' }}
-    </span>
-  </button>
-</th>
-
-<th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-  <button
-    @click="changeSort('points')"
-    class="flex items-center gap-1 text-gray-300 hover:text-white"
-  >
-    Points
-    <span v-if="sortBy === 'points'">
-      {{ sortDirection === 'desc' ? '▼' : '▲' }}
-    </span>
-  </button>
-</th>
+                <button @click="changeSort('wins')" class="flex items-center gap-1 text-gray-300 hover:text-white"> <!--Sorter etter seiere-->
+                  Wins
+                  <span v-if="sortBy === 'wins'">
+                  {{ sortDirection === 'desc' ? '▼' : '▲' }}
+                  </span>
+                </button>
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <button @click="changeSort('podiums')"class="flex items-center gap-1 text-gray-300 hover:text-white"> <!--Sorter etter podium-->
+                  Podiums
+                  <span v-if="sortBy === 'podiums'">
+                  {{ sortDirection === 'desc' ? '▼' : '▲' }}
+                  </span>
+                </button>
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <button @click="changeSort('poles')"class="flex items-center gap-1 text-gray-300 hover:text-white"> <!--Sorter etter Pole Positions-->
+                  Poles
+                  <span v-if="sortBy === 'poles'">
+                  {{ sortDirection === 'desc' ? '▼' : '▲' }}
+                  </span>
+                </button>
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <button @click="changeSort('points')"class="flex items-center gap-1 text-gray-300 hover:text-white"> <!--Sorter etter Poeng-->
+                  Points
+                  <span v-if="sortBy === 'points'">
+                  {{ sortDirection === 'desc' ? '▼' : '▲' }}
+                  </span>
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-700">
-            <tr 
-              v-for="(driver, index) in allTimeStats" 
-              :key="driver.id"
-              :class="index < 3 ? 'bg-slate-750' : ''"
-            >
+            <tr v-for="(driver, index) in allTimeStats" :key="driver.id":class="index < 3 ? 'bg-slate-750' : ''">
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full font-bold"
-                  :class="{
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full font-bold":class="{
                     'bg-yellow-500 text-slate-900': index === 0,
                     'bg-gray-400 text-slate-900': index === 1,
                     'bg-orange-600 text-white': index === 2,
                     'text-gray-300': index > 2
-                  }"
-                >
-                  {{ index + 1 }}
+                  }">
+                  {{ index + 1 }} <!--Plassering, 1-20-->
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                {{ driver.name }}
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white"> 
+                {{ driver.name }} <!--Hent navn på sjåfør-->
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 font-semibold">
-                {{ driver.totalWins }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                {{ driver.totalPodiums }}
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 font-semibold"> 
+                {{ driver.totalWins }} <!--Hent antall seiere totalt-->
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                {{ driver.totalPoles }}
+                {{ driver.totalPodiums }} <!--Hent antall podium totalt-->
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                {{ driver.totalPoints }}
+                {{ driver.totalPoles }} <!--Hent antall podiums totalt-->
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                {{ driver.totalPoints }} <!--Hent antall poeng totalt-->
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-
       <p v-else class="text-gray-600">No data found</p>
     </div>
   </div>
 </template>
 
-<style scoped>
-.bg-slate-750 {
-  background-color: #283244;
-}
+<style scoped> 
+.bg-slate-750 {background-color: #283244;}
 </style>

@@ -44,9 +44,6 @@ const seasonForm = ref({
   Season: ''
 })
 
-// At the top with your other refs
-
-
 // Fetch all data
 async function getRacerSeasons() {
   loading.value = true
@@ -133,7 +130,7 @@ async function createEntry() {
       .from('Points')
       .insert({
 'RacerID': form.value.Racer,
-        'SeasonID': form.value.Season,  // assuming this is also mixed case
+        'SeasonID': form.value.Season, 
         'Points': form.value.Points,
         'Poles': form.value.Poles,
         'Wins': form.value.Wins,
@@ -157,7 +154,7 @@ async function updateEntry() {
       .from('Points')
       .update({
 'RacerID': form.value.Racer,
-        'SeasonID': form.value.Season,  // assuming this is also mixed case
+        'SeasonID': form.value.Season,
         'Points': form.value.Points,
         'Poles': form.value.Poles,
         'Wins': form.value.Wins,
@@ -340,7 +337,7 @@ onMounted(() => {
     <Navbar />
     
     <div class="container mx-auto px-4 py-8"> 
-      <!-- Header with buttons -->
+      <!-- Header med knapper for å legge til innhold -->
      <div class="flex flex-wrap gap-3 justify-between items-center mb-6">
         <h2 class="text-2xl font-bold">Season Standings</h2>
         <div class="flex flex-wrap gap-2">
@@ -371,7 +368,7 @@ onMounted(() => {
         <table class="min-w-full bg-slate-800 rounded-lg overflow-hidden shadow-lg">
           <thead class="bg-slate-700">
             <tr>
-              <th class="px-6 py-3 text-left">
+              <th class="px-6 py-3 text-left"> <!-- Valg av sesong -->
                 <label for="season" class="sr-only">Season</label>
                   <select v-model="chosenSeason" id="season" class="bg-gray-800 text-gray-300 text-xs font-medium uppercase tracking-wider border border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring">
                   <option value="S01">Season 1</option>
