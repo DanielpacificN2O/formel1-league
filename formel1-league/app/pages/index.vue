@@ -133,7 +133,7 @@ async function createEntry() {
       .insert({
 'RacerID': form.value.Racer,
         'SeasonID': form.value.Season,
-        'Team': form.value.Team, 
+        'Team': form.value.TeamName, 
         'Points': form.value.Points,
         'Poles': form.value.Poles,
         'Wins': form.value.Wins,
@@ -158,7 +158,7 @@ async function updateEntry() {
       .update({
 'RacerID': form.value.Racer,
         'SeasonID': form.value.Season,
-        'Team': form.value.Team,
+        'Team': form.value.TeamName,
         'Points': form.value.Points,
         'Poles': form.value.Poles,
         'Wins': form.value.Wins,
