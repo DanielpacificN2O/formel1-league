@@ -33,6 +33,13 @@ const toggleMobileMenu = () => {
           >
             All-Time Stats
           </NuxtLink>
+          <NuxtLink 
+            to="/teams" 
+            class="text-gray-300 hover:text-white transition-colors"
+            active-class="text-white font-semibold"
+          >
+            Team Standings
+          </NuxtLink>
         </div>
 
         <!-- Mobile menu button -->
