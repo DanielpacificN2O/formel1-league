@@ -440,6 +440,9 @@ onMounted(() => {
                 {{ item.Racer?.Name || 'N/A' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                {{ item.Team }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                 {{ item.Points }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
@@ -528,6 +531,19 @@ onMounted(() => {
           </div>
 
           <!-- Points Input -->
+
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              Team
+            </label>
+            <input 
+              v-model.number="form.Points"
+              type="number"
+              class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              required
+            />
+          </div>
+
         <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">
               Points

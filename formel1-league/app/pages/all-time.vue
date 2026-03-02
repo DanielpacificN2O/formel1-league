@@ -135,7 +135,7 @@ onMounted(() => {
                 </button>
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                <button @click="changeSort('podiums')"class="flex items-center gap-1 text-gray-300 hover:text-white"> <!--Sorter etter podium-->
+                <button @click="changeSort('podiums')" class="flex items-center gap-1 text-gray-300 hover:text-white"> <!--Sorter etter podium-->
                   Podiums
                   <span v-if="sortBy === 'podiums'">
                   {{ sortDirection === 'desc' ? '▼' : '▲' }}
@@ -143,7 +143,7 @@ onMounted(() => {
                 </button>
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                <button @click="changeSort('poles')"class="flex items-center gap-1 text-gray-300 hover:text-white"> <!--Sorter etter Pole Positions-->
+                <button @click="changeSort('poles')" class="flex items-center gap-1 text-gray-300 hover:text-white"> <!--Sorter etter Pole Positions-->
                   Poles
                   <span v-if="sortBy === 'poles'">
                   {{ sortDirection === 'desc' ? '▼' : '▲' }}
@@ -151,7 +151,7 @@ onMounted(() => {
                 </button>
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                <button @click="changeSort('points')"class="flex items-center gap-1 text-gray-300 hover:text-white"> <!--Sorter etter Poeng-->
+                <button @click="changeSort('points')" class="flex items-center gap-1 text-gray-300 hover:text-white"> <!--Sorter etter Poeng-->
                   Points
                   <span v-if="sortBy === 'points'">
                   {{ sortDirection === 'desc' ? '▼' : '▲' }}
@@ -161,9 +161,9 @@ onMounted(() => {
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-700">
-            <tr v-for="(driver, index) in allTimeStats" :key="driver.id":class="index < 3 ? 'bg-slate-750' : ''">
+            <tr v-for="(driver, index) in allTimeStats" :key="driver.id" :class="index < 3 ? 'bg-slate-750' : ''">
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full font-bold":class="{
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full font-bold" :class="{
                     'bg-yellow-500 text-slate-900': index === 0,
                     'bg-gray-400 text-slate-900': index === 1,
                     'bg-orange-600 text-white': index === 2,
