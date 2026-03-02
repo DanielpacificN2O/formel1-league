@@ -221,6 +221,30 @@ async function createRacer() {
     alert('Error creating racer: ' + e.message)
   }
 }
+// Create new team
+async function createTeam() {
+  if (!TeamForm.value.TeamName.trim()) {
+    alert('Please enter a team name')
+    return
+  }
+  
+  try {
+    const { error } = await supabase
+      .from('Team')
+      .insert({
+        Name: TeamForm.value.TeamName
+      })
+    
+    if (error) throw error
+    
+    await getTeam()
+    closeTeamModal()
+    alert('Team created successfully!')
+  } catch (e) {
+    console.error('Error creating team:', e)
+    alert('Error creating team: ' + e.message)
+  }
+}
 
 // Create new season
 async function createSeason() {
