@@ -708,6 +708,48 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- Team Modal -->
+    <div 
+      v-if="showTeamModal" 
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      @click.self="closeTeamModal"
+    >
+      <div class="bg-slate-800 rounded-lg p-8 max-w-md w-full mx-4">
+        <h3 class="text-xl text-white font-bold mb-6">Add New Team</h3>
+        
+        <form @submit.prevent="createTeam" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              Team Name
+            </label>
+            <input 
+              v-model="TeamForm.Name"
+              type="text"
+              placeholder="Enter racer name"
+              class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-green-500"
+              required
+            />
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-4">
+            <button 
+              type="button"
+              @click="closeTeamModal"
+              class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+            >
+              Create Team
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Season Modal -->
   <div 
       v-if="showSeasonModal" 
