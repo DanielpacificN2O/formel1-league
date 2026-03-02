@@ -285,6 +285,12 @@ function openRacerModal() {
   showRacerModal.value = true
 }
 
+// Open team modal
+function openTeamModal() {
+  racerForm.value = { TeamName: '' }
+  showTeamModal.value = true
+}
+
 // Open season modal
 function openSeasonModal() {
   seasonForm.value = { Season: '' }
@@ -353,6 +359,12 @@ onMounted(() => {
             class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             + Add Racer
+          </button>
+          <button 
+            @click="openTeamModal"
+            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            + Add Team
           </button>
           <button 
             @click="openSeasonModal"
@@ -546,12 +558,20 @@ onMounted(() => {
             <label class="block text-sm font-medium text-gray-300 mb-2">
               Team
             </label>
-            <input 
-              v-model.number="form.Team"
-              type="number"
+            <select 
+              v-model="form.Team"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               required
-            />
+            >
+              <option :value="null">Select a Team</option>
+              <option 
+                v-for="Team in Team" 
+                :key="Team.id" 
+                :value="Team.id"
+              >
+                {{ Team.TeamName }}
+              </option>
+            </select>
           </div>
 
         <div>
