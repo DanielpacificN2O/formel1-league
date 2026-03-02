@@ -1,7 +1,7 @@
 <script setup>
 import Navbar from '../components/Navbar.vue';
 import Hero from '../components/Hero.vue';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { createClient } from '@supabase/supabase-js';
 
 const config = useRuntimeConfig()
@@ -513,7 +513,7 @@ onMounted(() => {
                 {{ item.Racer?.Name || 'N/A' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                {{ item.Team }}
+                {{ item.Team?.TeamName || 'N/A' }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                 {{ item.Points }}
@@ -587,15 +587,15 @@ onMounted(() => {
               Team
             </label>
             <select 
-              v-model="form.value.Team"
+              v-model="form.Team"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               required
             >
               <option :value="null">Select a Team</option>
               <option 
                 v-for="Team in teams" 
-                :key="Team.id" 
-                :value="Team.id"
+                :key="Team?.id" 
+                :value="Team?.id"
               >
                 {{ Team.TeamName }}
               </option>
@@ -752,7 +752,7 @@ onMounted(() => {
               Team Name
             </label>
             <input 
-              v-model="TeamForm.Name"
+              v-model="TeamForm.TeamName"
               type="text"
               placeholder="Enter racer name"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-green-500"
