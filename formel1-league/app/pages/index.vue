@@ -17,6 +17,8 @@ const supabase = createClient(
 const racers = ref([])
 const seasons = ref([])
 const teams = ref([])
+const TeamForm = ref({TeamName: ''})
+const showTeamModal = ref(false)
 const chosenSeason = ref("S1")
 const showModal = ref(false)
 const showRacerModal = ref(false)
@@ -54,7 +56,10 @@ async function getRacerSeasons() {
       .from('Points')
       .select(`
         id,
-        Team,
+        Team (
+        id,
+        TeamName
+        ),
         Points,
         Poles,
         Wins,
@@ -149,7 +154,7 @@ async function createEntry() {
       .insert({
 'RacerID': form.value.Racer,
         'SeasonID': form.value.Season,
-        'Team': form.value.TeamName, 
+        'Team': form.value.Team, 
         'Points': form.value.Points,
         'Poles': form.value.Poles,
         'Wins': form.value.Wins,
@@ -174,7 +179,7 @@ async function updateEntry() {
       .update({
 'RacerID': form.value.Racer,
         'SeasonID': form.value.Season,
-        'Team': form.value.TeamName,
+        'Team': form.value.Team,
         'Points': form.value.Points,
         'Poles': form.value.Poles,
         'Wins': form.value.Wins,
@@ -248,7 +253,7 @@ async function createTeam() {
     const { error } = await supabase
       .from('Team')
       .insert({
-        Name: TeamForm.value.TeamName
+        TeamName: TeamForm.value.TeamName
       })
     
     if (error) throw error
@@ -310,7 +315,7 @@ function openEditModal(item) {
     id: item.id,
     Racer: item.Racer.id,
     Season: item.Seasons.id,
-    Team: item.Team.id,
+    Team: item.Team,
     Points: item.Points,
     Poles: item.Poles,
     Wins: item.Wins,
@@ -327,7 +332,7 @@ function openRacerModal() {
 
 // Open team modal
 function openTeamModal() {
-  racerForm.value = { TeamName: '' }
+  TeamForm.value = { TeamName: '' }
   showTeamModal.value = true
 }
 
@@ -355,6 +360,11 @@ function closeModal() {
 function closeRacerModal() {
   showRacerModal.value = false
   racerForm.value = { Name: '' }
+}
+
+function closeTeamModal() {
+  showTeamModal.value = false
+  TeamForm.value = { TeamName: '' }
 }
 
 function closeSeasonModal() {
@@ -577,7 +587,7 @@ onMounted(() => {
               Team
             </label>
             <select 
-              v-model="form.Team"
+              v-model="form.value.Team"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               required
             >
@@ -587,7 +597,7 @@ onMounted(() => {
                 :key="Team.id" 
                 :value="Team.id"
               >
-                {{ Team.Team }}
+                {{ Team.TeamName }}
               </option>
             </select>
           </div>
