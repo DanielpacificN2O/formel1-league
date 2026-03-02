@@ -16,6 +16,7 @@ const supabase = createClient(
 
 const racers = ref([])
 const seasons = ref([])
+const teams = ref([])
 const chosenSeason = ref("S1")
 const showModal = ref(false)
 const showRacerModal = ref(false)
@@ -106,6 +107,21 @@ async function getRacers() {
     racers.value = data || []
   } catch (e) {
     console.error('Error fetching racers:', e)
+  }
+}
+
+// Fetch teams for dropdown
+async function getTeams() {
+  try {
+    const { data, error } = await supabase
+      .from('Team')
+      .select('id, TeamName')
+      .order('TeamName')
+    
+    if (error) throw error
+    teams.value = data || []
+  } catch (e) {
+    console.error('Error fetching teams:', e)
   }
 }
 
@@ -237,7 +253,7 @@ async function createTeam() {
     
     if (error) throw error
     
-    await getTeam()
+    await getTeams()
     closeTeamModal()
     alert('Team created successfully!')
   } catch (e) {
@@ -364,6 +380,7 @@ function submitForm() {
 onMounted(() => {
   getRacerSeasons()
   getRacers()
+  getTeams()
   getSeasons()
 })
 </script>
@@ -555,6 +572,26 @@ onMounted(() => {
             </select>
           </div>
 
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              Team
+            </label>
+            <select 
+              v-model="form.Team"
+              class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              required
+            >
+              <option :value="null">Select a Team</option>
+              <option 
+                v-for="Team in teams" 
+                :key="Team.id" 
+                :value="Team.id"
+              >
+                {{ Team.Team }}
+              </option>
+            </select>
+          </div>
+
           <!-- Season Dropdown -->
          <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">
@@ -578,25 +615,7 @@ onMounted(() => {
 
           <!-- Points Input -->
 
-        <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Team
-            </label>
-            <select 
-              v-model="form.Team"
-              class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-              required
-            >
-              <option :value="null">Select a Team</option>
-              <option 
-                v-for="Team in Team" 
-                :key="Team.id" 
-                :value="Team.id"
-              >
-                {{ Team.TeamName }}
-              </option>
-            </select>
-          </div>
+        
 
         <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">
