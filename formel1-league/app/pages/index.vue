@@ -52,6 +52,7 @@ async function getRacerSeasons() {
       .from('Points')
       .select(`
         id,
+        Team,
         Points,
         Poles,
         Wins,
@@ -130,7 +131,8 @@ async function createEntry() {
       .from('Points')
       .insert({
 'RacerID': form.value.Racer,
-        'SeasonID': form.value.Season, 
+        'SeasonID': form.value.Season,
+        'Team': form.value.Team, 
         'Points': form.value.Points,
         'Poles': form.value.Poles,
         'Wins': form.value.Wins,
@@ -155,6 +157,7 @@ async function updateEntry() {
       .update({
 'RacerID': form.value.Racer,
         'SeasonID': form.value.Season,
+        'Team': form.value.Team,
         'Points': form.value.Points,
         'Poles': form.value.Poles,
         'Wins': form.value.Wins,
@@ -537,7 +540,7 @@ onMounted(() => {
               Team
             </label>
             <input 
-              v-model.number="form.Points"
+              v-model.number="form.Team"
               type="number"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               required
