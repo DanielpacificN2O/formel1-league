@@ -129,6 +129,26 @@ onMounted(() => {
                   <option value="S06">Season 6</option>
                   <option value="S07">Season 7</option>
                   <option value="S08">Season 8</option>
+                  <option value="S09">Season 9</option>
+                  <option value="S10">Season 10</option>
+                  <option value="S11">Season 11</option>
+                  <option value="S12">Season 12</option>
+                  <option value="S13">Season 13</option>
+                  <option value="S14">Season 14</option>
+                  <option value="S15">Season 15</option>
+                  <option value="S16">Season 16</option>
+                  <option value="S17">Season 17</option>
+                  <option value="S18">Season 18</option>
+                  <option value="S19">Season 19</option>
+                  <option value="S20">Season 20</option>
+                  <option value="S21">Season 21</option>
+                  <option value="S22">Season 22</option>
+                  <option value="S23">Season 23</option>
+                  <option value="S24">Season 24</option>
+                  <option value="S25">Season 25</option>
+                  <option value="S26">Season 26</option>
+                  <option value="S27">Season 27</option>
+                  <option value="S28">Season 28</option>
                 </select>
               </th>
               <th class="px-6 py-3 text-left text-xs text-gray-300 uppercase">Team</th>

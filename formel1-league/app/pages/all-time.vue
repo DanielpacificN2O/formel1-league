@@ -1,7 +1,8 @@
 <script setup>
-import Navbar from '../components/Navbar.vue'
+import Navbar from '../components/Navbar.vue';
+import Hero from '../components/Hero.vue';
 import { ref, computed, onMounted } from 'vue';
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
 
 const config = useRuntimeConfig()
 const supabase = createClient(
@@ -105,6 +106,7 @@ onMounted(() => {
 
 <template>
   <div class="bg-slate-200 min-h-screen">
+    <Hero />
     <Navbar />
     <div class="container mx-auto px-4 py-8">
       <!-- Header -->
