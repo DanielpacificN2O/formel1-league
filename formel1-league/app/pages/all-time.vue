@@ -94,10 +94,55 @@ const allTimeStats = computed(() => {
   const key = keyMap[sortBy.value]
   const direction = sortDirection.value === 'desc' ? -1 : 1
 
-  return Array.from(statsMap.values()).sort((a, b) => {
-    return (a[key] - b[key]) * direction
-  })
+
+const compare = (a, b, key) => (a[key] - b[key]) * direction
+
+return Array.from(statsMap.values()).sort((a, b) => {
+
+  // Primary sort
+  let result = compare(a, b, key)
+  if (result !== 0) return result
+
+  // Tie-breakers based on selected column
+  if (sortBy.value === 'wins') {
+    result = compare(a, b, 'totalPodiums')
+    if (result !== 0) return result
+
+    return compare(a, b, 'totalPoints')
+  }
+
+  if (sortBy.value === 'podiums') {
+    result = compare(a, b, 'totalWins')
+    if (result !== 0) return result
+
+    return compare(a, b, 'totalPoints')
+  }
+
+  if (sortBy.value === 'poles') {
+    result = compare(a, b, 'totalWins')
+    if (result !== 0) return result
+
+    result = compare(a, b, 'totalPodiums')
+    if (result !== 0) return result
+
+    return compare(a, b, 'totalPoints')
+  }
+
+  if (sortBy.value === 'points') {
+    result = compare(a, b, 'totalWins')
+    if (result !== 0) return result
+
+    return compare(a, b, 'totalPodiums')
+  }
+
+  return 0
 })
+
+
+  
+})
+
+
 
 onMounted(() => {
   getRacerSeasons()
