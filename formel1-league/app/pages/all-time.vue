@@ -219,7 +219,7 @@ onMounted(() => {
                 </button>
               </th>
               <!-- ADDED: Championships column header -->
-              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+              <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
                 <button @click="changeSort('championships')" class="flex items-center gap-1 text-gray-300 hover:text-white">
                   Championships
                   <span v-if="sortBy === 'championships'">{{ sortDirection === 'desc' ? '▼' : '▲' }}</span>
@@ -229,7 +229,7 @@ onMounted(() => {
           </thead>
           <tbody class="divide-y divide-slate-700">
             <tr v-for="(driver, index) in allTimeStats" :key="driver.id" :class="index < 3 ? 'bg-slate-750' : ''">
-              <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-300">
+              <td class="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-300">
                 <span class="inline-flex items-center justify-center w-8 h-8 rounded-full font-bold" :class="{
                     'bg-yellow-500 text-slate-900': index === 0,
                     'bg-gray-400 text-slate-900': index === 1,
@@ -255,7 +255,7 @@ onMounted(() => {
                 {{ driver.totalPoints }}
               </td>
               <!-- ADDED: Championships cell with hover tooltip showing seasons -->
-              <td class="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-300">
+              <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-300">
                 <span
                   v-if="driver.totalChampionships > 0"
                   class="relative group cursor-default font-semibold text-yellow-400"
