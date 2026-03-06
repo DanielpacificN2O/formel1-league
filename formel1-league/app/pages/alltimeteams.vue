@@ -295,31 +295,31 @@ function formatSeason(seasonCode) {
           
           <thead class="bg-slate-700">
             <tr>
-              <th class="px-3 py-2 text-[11px] text-gray-300 uppercase">Rank</th>
-              <th class="px-3 py-2 text-[11px] text-gray-300 uppercase">Team</th>
-              <th class="px-3 py-2 text-[11px] uppercase">
+              <th class="px-6 py-3 text-xs text-gray-300 uppercase">Rank</th>
+              <th class="px-6 py-3 text-xs text-gray-300 uppercase">Team</th>
+              <th class="px-6 py-3 text-xs uppercase">
                 <button @click="changeSort('wins')" class="text-gray-300 hover:text-white">
                   Wins {{ sortBy === 'wins' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
                 </button>
               </th>
-              <th class="px-3 py-2 text-[11px] uppercase">
+              <th class="px-6 py-3 text-xs uppercase">
                 <button @click="changeSort('podiums')" class="text-gray-300 hover:text-white">
                   Podiums {{ sortBy === 'podiums' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
                 </button>
               </th>
-              <th class="px-3 py-2 text-[11px] uppercase">
+              <th class="px-6 py-3 text-xs uppercase">
                 <button @click="changeSort('poles')" class="text-gray-300 hover:text-white">
                   Poles {{ sortBy === 'poles' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
                 </button>
               </th>
-              <th class="px-3 py-2 text-[11px] uppercase">
+              <th class="px-6 py-3 text-xs uppercase">
                 <button @click="changeSort('points')" class="text-gray-300 hover:text-white">
                   Points {{ sortBy === 'points' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
                 </button>
               </th>
-              <th class="px-3 py-2 text-[11px] text-gray-300 uppercase">First Season</th>
-              <th class="px-3 py-2 text-[11px] text-gray-300 uppercase">Last Season</th>
-              <th class="px-3 py-2 text-[11px] text-gray-300 uppercase">Top 3 Drivers ({{ sortBy.charAt(0).toUpperCase() + sortBy.slice(1) }})</th>
+              <th class="px-6 py-3 text-xs text-gray-300 uppercase">First Season</th>
+              <th class="px-6 py-3 text-xs text-gray-300 uppercase">Last Season</th>
+              <th class="px-6 py-3 text-xs text-gray-300 uppercase">Top 3 Drivers ({{ sortBy.charAt(0).toUpperCase() + sortBy.slice(1) }})</th>
               <!-- ADDED: Championship columns -->
               <th class="px-3 py-2 text-[11px] uppercase text-center">
                 <button @click="changeSort('driverChampionships')" class="mx-auto flex items-center gap-1 text-gray-300 hover:text-white">
@@ -337,7 +337,7 @@ function formatSeason(seasonCode) {
           <tbody class="divide-y divide-slate-700">
             <tr v-for="(team, index) in allTimeTeamStats" :key="team.id">
               
-              <td class="px-3 py-2 text-[11px] text-center text-gray-300">
+              <td class="px-6 py-4 text-sm text-center text-gray-300">
                 <span class="inline-flex items-center justify-center w-8 h-8 rounded-full font-bold"
                   :class="{
                     'bg-yellow-500 text-slate-900': index === 0,
@@ -349,15 +349,15 @@ function formatSeason(seasonCode) {
                 </span>
               </td>
 
-              <td class="px-3 py-2 text-[11px] text-center text-white font-medium">{{ team.name }}</td>
-              <td class="px-3 py-2 text-[11px] text-center text-gray-300 font-semibold">{{ team.totalWins }}</td>
-              <td class="px-3 py-2 text-[11px] text-center text-gray-300">{{ team.totalPodiums }}</td>
-              <td class="px-3 py-2 text-[11px] text-center text-gray-300">{{ team.totalPoles }}</td>
-              <td class="px-3 py-2 text-[11px] text-center text-gray-300">{{ team.totalPoints }}</td>
-              <td class="px-3 py-2 text-[11px] text-center text-gray-300">{{ formatSeason(team.firstSeason) }}</td>
-              <td class="px-3 py-2 text-[11px] text-center text-gray-300">{{ formatSeason(team.lastSeason) }}</td>
+              <td class="px-6 py-4 text-sm text-center text-white font-medium">{{ team.name }}</td>
+              <td class="px-6 py-4 text-sm text-center text-gray-300 font-semibold">{{ team.totalWins }}</td>
+              <td class="px-6 py-4 text-sm text-center text-gray-300">{{ team.totalPodiums }}</td>
+              <td class="px-6 py-4 text-sm text-center text-gray-300">{{ team.totalPoles }}</td>
+              <td class="px-6 py-4 text-sm text-center text-gray-300">{{ team.totalPoints }}</td>
+              <td class="px-6 py-4 text-sm text-center text-gray-300">{{ formatSeason(team.firstSeason) }}</td>
+              <td class="px-6 py-4 text-sm text-center text-gray-300">{{ formatSeason(team.lastSeason) }}</td>
 
-              <td class="px-3 py-2 text-[11px] text-center text-gray-300">
+              <td class="px-6 py-4 text-sm text-center text-gray-300">
                 <div v-for="driver in team.topDrivers" :key="driver.name">
                   {{ driver.name }} ({{ driver[sortBy] }})
                 </div>
