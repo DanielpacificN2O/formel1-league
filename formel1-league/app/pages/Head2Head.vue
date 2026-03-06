@@ -63,17 +63,19 @@ const headToHeadStats = computed(() => {
     // Initialize driver
     if (!driverMap.has(driverId)) {
       driverMap.set(driverId, {
-  id: driverId,
-  name: driverName,
-  ahead: 0,
-  winDiff: 0,
-  podiumDiff: 0,
-  pointDiff: 0
-})
+        id: driverId,
+        name: driverName,
+        ahead: 0,
+        // CHANGED: replaced single 'ahead' with ahead/tie/behind
+        tie: 0,
+        behind: 0,
+        winDiff: 0,
+        podiumDiff: 0,
+        pointDiff: 0
+      })
     }
 
     const driver = driverMap.get(driverId)
-    
 
     // Group by season + team
     const key = `${season}-${teamId}`
@@ -82,42 +84,47 @@ const headToHeadStats = computed(() => {
     }
 
     seasonTeamMap.get(key).push({
-  driverId,
-  wins: entry.Wins || 0,
-  podiums: entry.Podiums || 0,
-  points: entry.Points || 0
-})
+      driverId,
+      wins: entry.Wins || 0,
+      podiums: entry.Podiums || 0,
+      points: entry.Points || 0
+    })
   })
 
   // Calculate head-to-head results
   seasonTeamMap.forEach(drivers => {
-  if (drivers.length < 2) return
+    if (drivers.length < 2) return
 
-  const d1 = drivers[0]
-  const d2 = drivers[1]
+    const d1 = drivers[0]
+    const d2 = drivers[1]
 
-  const driver1 = driverMap.get(d1.driverId)
-  const driver2 = driverMap.get(d2.driverId)
+    const driver1 = driverMap.get(d1.driverId)
+    const driver2 = driverMap.get(d2.driverId)
 
-  // Ahead count (based on points)
-  if (d1.points > d2.points) {
-    driver1.ahead += 1
-  } else if (d2.points > d1.points) {
-    driver2.ahead += 1
-  }
+    // CHANGED: ahead / tie / behind count (based on points)
+    if (d1.points > d2.points) {
+      driver1.ahead += 1
+      driver2.behind += 1
+    } else if (d2.points > d1.points) {
+      driver2.ahead += 1
+      driver1.behind += 1
+    } else {
+      driver1.tie += 1
+      driver2.tie += 1
+    }
 
-  // Wins difference
-  driver1.winDiff += (d1.wins - d2.wins)
-  driver2.winDiff += (d2.wins - d1.wins)
+    // Wins difference
+    driver1.winDiff += (d1.wins - d2.wins)
+    driver2.winDiff += (d2.wins - d1.wins)
 
-  // Podiums difference
-  driver1.podiumDiff += (d1.podiums - d2.podiums)
-  driver2.podiumDiff += (d2.podiums - d1.podiums)
+    // Podiums difference
+    driver1.podiumDiff += (d1.podiums - d2.podiums)
+    driver2.podiumDiff += (d2.podiums - d1.podiums)
 
-  // Points difference
-  driver1.pointDiff += (d1.points - d2.points)
-  driver2.pointDiff += (d2.points - d1.points)
-})
+    // Points difference
+    driver1.pointDiff += (d1.points - d2.points)
+    driver2.pointDiff += (d2.points - d1.points)
+  })
 
   const dir = sortDirection.value === 'desc' ? -1 : 1
 
@@ -170,9 +177,10 @@ onMounted(() => {
               <th class="px-6 py-3 text-xs text-gray-300 uppercase">Rank</th>
               <th class="px-6 py-3 text-xs text-gray-300 uppercase">Driver</th>
 
+              <!-- CHANGED: replaced "Ahead of Teammate" with "Ahead - Tie - Behind" -->
               <th class="px-6 py-3 text-xs uppercase">
                 <button @click="changeSort('ahead')" class="text-gray-300 hover:text-white">
-                  Ahead of Teammate
+                  Ahead - Tie - Behind
                   {{ sortBy === 'ahead' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
                 </button>
               </th>
@@ -218,8 +226,13 @@ onMounted(() => {
                 {{ driver.name }}
               </td>
 
-              <td class="px-6 py-4 text-center text-gray-300 font-semibold">
-                {{ driver.ahead }}
+              <!-- CHANGED: display "ahead-tie-behind" format -->
+              <td class="px-6 py-4 text-center font-semibold">
+                <span class="text-green-400">{{ driver.ahead }}</span>
+                <span class="text-gray-400"> - </span>
+                <span class="text-yellow-400">{{ driver.tie }}</span>
+                <span class="text-gray-400"> - </span>
+                <span class="text-red-400">{{ driver.behind }}</span>
               </td>
 
               <td class="px-6 py-4 text-center text-gray-300">
