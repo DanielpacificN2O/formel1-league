@@ -239,7 +239,7 @@ onMounted(() => {
                   {{ index + 1 }}
                 </span>
               </td>
-              <td class="px-6 py-4 text-left whitespace-nowrap text-sm font-medium text-white">
+              <td class="px-6 py-4 text-center text-white font-medium">
                 {{ driver.name }}
               </td>
               <td class="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-300 font-semibold">
