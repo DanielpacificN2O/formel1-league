@@ -43,10 +43,10 @@ function nextSeason() {
   chosenSeason.value = seasonOptions[(idx + 1) % seasonOptions.length]
 }
 
-// ADDED: human-readable label, e.g. "S03" -> "Season 3"
+// ADDED: short label, e.g. "S03" -> "S3"
 function seasonLabel(value) {
   const num = parseInt(value.replace('S', ''), 10)
-  return `Season ${num}`
+  return `S${num}`
 }
 
 // ADDED: label shown on the prev button - the season it would go to
@@ -442,7 +442,7 @@ onMounted(() => {
           <thead class="bg-slate-700">
             <tr>
               <!-- CHANGED: season selector now wrapped with prev/next arrow buttons -->
-              <th class="px-6 py-3 text-left">
+              <th class="px-2 py-3 text-left w-px whitespace-nowrap">
                 <label for="season" class="sr-only">Season</label>
                 <div class="flex items-center gap-1">
                   <button
