@@ -194,32 +194,32 @@ onMounted(() => {
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                 Driver
               </th>
-              <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 <button @click="changeSort('wins')" class="flex items-center gap-1 text-gray-300 hover:text-white">
                   Wins
                   <span v-if="sortBy === 'wins'">{{ sortDirection === 'desc' ? '▼' : '▲' }}</span>
                 </button>
               </th>
-              <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 <button @click="changeSort('podiums')" class="flex items-center gap-1 text-gray-300 hover:text-white">
                   Podiums
                   <span v-if="sortBy === 'podiums'">{{ sortDirection === 'desc' ? '▼' : '▲' }}</span>
                 </button>
               </th>
-              <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 <button @click="changeSort('poles')" class="flex items-center gap-1 text-gray-300 hover:text-white">
                   Poles
                   <span v-if="sortBy === 'poles'">{{ sortDirection === 'desc' ? '▼' : '▲' }}</span>
                 </button>
               </th>
-              <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 <button @click="changeSort('points')" class="flex items-center gap-1 text-gray-300 hover:text-white">
                   Points
                   <span v-if="sortBy === 'points'">{{ sortDirection === 'desc' ? '▼' : '▲' }}</span>
                 </button>
               </th>
               <!-- ADDED: Championships column header -->
-              <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 <button @click="changeSort('championships')" class="flex items-center gap-1 text-gray-300 hover:text-white">
                   Championships
                   <span v-if="sortBy === 'championships'">{{ sortDirection === 'desc' ? '▼' : '▲' }}</span>
@@ -242,20 +242,20 @@ onMounted(() => {
               <td class="px-6 py-4 text-left whitespace-nowrap text-sm font-medium text-white">
                 {{ driver.name }}
               </td>
-              <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-300 font-semibold">
+              <td class="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-300 font-semibold">
                 {{ driver.totalWins }}
               </td>
-              <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-300">
+              <td class="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-300">
                 {{ driver.totalPodiums }}
               </td>
-              <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-300">
+              <td class="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-300">
                 {{ driver.totalPoles }}
               </td>
-              <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-300">
+              <td class="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-300">
                 {{ driver.totalPoints }}
               </td>
               <!-- ADDED: Championships cell with hover tooltip showing seasons -->
-              <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-300">
+              <td class="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-300">
                 <span
                   v-if="driver.totalChampionships > 0"
                   class="relative group cursor-default font-semibold text-yellow-400"
