@@ -200,10 +200,12 @@ const allTimeTeamStats = computed(() => {
     wins: 'totalWins',
     points: 'totalPoints',
     podiums: 'totalPodiums',
-    poles: 'totalPoles'
+    poles: 'totalPoles',
+    driverChampionships: 'driverChampionships',
+    teamChampionships: 'teamChampionships'
   }
 
-  const key = keyMap[sortBy.value]
+  const key = keyMap[sortBy.value] || 'totalWins'
   const direction = sortDirection.value === 'desc' ? -1 : 1
 
   return Array.from(teamMap.values()).map(team => {
@@ -249,6 +251,16 @@ const allTimeTeamStats = computed(() => {
       if (result !== 0) return result
       return compare(a.totalPoints, b.totalPoints)
     }
+    if (sortBy.value === 'driverChampionships') {
+      result = compare(a.totalWins, b.totalWins)
+      if (result !== 0) return result
+      return compare(a.totalPoints, b.totalPoints)
+    }
+    if (sortBy.value === 'teamChampionships') {
+      result = compare(a.totalWins, b.totalWins)
+      if (result !== 0) return result
+      return compare(a.totalPoints, b.totalPoints)
+    }
     return 0
   })
 })
@@ -283,41 +295,49 @@ function formatSeason(seasonCode) {
           
           <thead class="bg-slate-700">
             <tr>
-              <th class="px-6 py-3 text-xs text-gray-300 uppercase">Rank</th>
-              <th class="px-6 py-3 text-xs text-gray-300 uppercase">Team</th>
-              <th class="px-6 py-3 text-xs uppercase">
+              <th class="px-3 py-2 text-[11px] text-gray-300 uppercase">Rank</th>
+              <th class="px-3 py-2 text-[11px] text-gray-300 uppercase">Team</th>
+              <th class="px-3 py-2 text-[11px] uppercase">
                 <button @click="changeSort('wins')" class="text-gray-300 hover:text-white">
                   Wins {{ sortBy === 'wins' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
                 </button>
               </th>
-              <th class="px-6 py-3 text-xs uppercase">
+              <th class="px-3 py-2 text-[11px] uppercase">
                 <button @click="changeSort('podiums')" class="text-gray-300 hover:text-white">
                   Podiums {{ sortBy === 'podiums' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
                 </button>
               </th>
-              <th class="px-6 py-3 text-xs uppercase">
+              <th class="px-3 py-2 text-[11px] uppercase">
                 <button @click="changeSort('poles')" class="text-gray-300 hover:text-white">
                   Poles {{ sortBy === 'poles' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
                 </button>
               </th>
-              <th class="px-6 py-3 text-xs uppercase">
+              <th class="px-3 py-2 text-[11px] uppercase">
                 <button @click="changeSort('points')" class="text-gray-300 hover:text-white">
                   Points {{ sortBy === 'points' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
                 </button>
               </th>
-              <th class="px-6 py-3 text-xs text-gray-300 uppercase">First Season</th>
-              <th class="px-6 py-3 text-xs text-gray-300 uppercase">Last Season</th>
-              <th class="px-6 py-3 text-xs text-gray-300 uppercase">Top 3 Drivers ({{ sortBy.charAt(0).toUpperCase() + sortBy.slice(1) }})</th>
+              <th class="px-3 py-2 text-[11px] text-gray-300 uppercase">First Season</th>
+              <th class="px-3 py-2 text-[11px] text-gray-300 uppercase">Last Season</th>
+              <th class="px-3 py-2 text-[11px] text-gray-300 uppercase">Top 3 Drivers ({{ sortBy.charAt(0).toUpperCase() + sortBy.slice(1) }})</th>
               <!-- ADDED: Championship columns -->
-              <th class="px-6 py-3 text-xs text-gray-300 uppercase text-center">Driver Championships</th>
-              <th class="px-6 py-3 text-xs text-gray-300 uppercase text-center">Team Championships</th>
+              <th class="px-3 py-2 text-[11px] uppercase text-center">
+                <button @click="changeSort('driverChampionships')" class="mx-auto flex items-center gap-1 text-gray-300 hover:text-white">
+                  Driver Championships {{ sortBy === 'driverChampionships' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
+                </button>
+              </th>
+              <th class="px-3 py-2 text-[11px] uppercase text-center">
+                <button @click="changeSort('teamChampionships')" class="mx-auto flex items-center gap-1 text-gray-300 hover:text-white">
+                  Team Championships {{ sortBy === 'teamChampionships' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
+                </button>
+              </th>
             </tr>
           </thead>
 
           <tbody class="divide-y divide-slate-700">
             <tr v-for="(team, index) in allTimeTeamStats" :key="team.id">
               
-              <td class="px-6 py-4 text-center text-gray-300">
+              <td class="px-3 py-2 text-[11px] text-center text-gray-300">
                 <span class="inline-flex items-center justify-center w-8 h-8 rounded-full font-bold"
                   :class="{
                     'bg-yellow-500 text-slate-900': index === 0,
@@ -329,53 +349,53 @@ function formatSeason(seasonCode) {
                 </span>
               </td>
 
-              <td class="px-6 py-4 text-center text-white font-medium">{{ team.name }}</td>
-              <td class="px-6 py-4 text-center text-gray-300 font-semibold">{{ team.totalWins }}</td>
-              <td class="px-6 py-4 text-center text-gray-300">{{ team.totalPodiums }}</td>
-              <td class="px-6 py-4 text-center text-gray-300">{{ team.totalPoles }}</td>
-              <td class="px-6 py-4 text-center text-gray-300">{{ team.totalPoints }}</td>
-              <td class="px-6 py-4 text-center text-gray-300">{{ formatSeason(team.firstSeason) }}</td>
-              <td class="px-6 py-4 text-center text-gray-300">{{ formatSeason(team.lastSeason) }}</td>
+              <td class="px-3 py-2 text-[11px] text-center text-white font-medium">{{ team.name }}</td>
+              <td class="px-3 py-2 text-[11px] text-center text-gray-300 font-semibold">{{ team.totalWins }}</td>
+              <td class="px-3 py-2 text-[11px] text-center text-gray-300">{{ team.totalPodiums }}</td>
+              <td class="px-3 py-2 text-[11px] text-center text-gray-300">{{ team.totalPoles }}</td>
+              <td class="px-3 py-2 text-[11px] text-center text-gray-300">{{ team.totalPoints }}</td>
+              <td class="px-3 py-2 text-[11px] text-center text-gray-300">{{ formatSeason(team.firstSeason) }}</td>
+              <td class="px-3 py-2 text-[11px] text-center text-gray-300">{{ formatSeason(team.lastSeason) }}</td>
 
-              <td class="px-6 py-4 text-center text-gray-300 text-sm">
+              <td class="px-3 py-2 text-[11px] text-center text-gray-300">
                 <div v-for="driver in team.topDrivers" :key="driver.name">
                   {{ driver.name }} ({{ driver[sortBy] }})
                 </div>
               </td>
 
               <!-- ADDED: Driver championships cell with tooltip -->
-              <td class="px-6 py-4 text-center">
+              <td class="px-3 py-2 text-center">
                 <span
                   v-if="team.driverChampionships > 0"
                   class="relative group cursor-default font-semibold text-yellow-400"
                 >
                   {{ team.driverChampionships }}
-                  <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-10">
+                  <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 hidden group-hover:flex flex-row items-center z-10">
                     <span class="bg-slate-900 text-white text-xs rounded px-3 py-2 whitespace-nowrap shadow-lg border border-slate-600">
                       <div v-for="entry in team.driverChampionshipSeasons" :key="entry.season">
                         🏆 {{ formatSeason(entry.season) }} — {{ entry.driverName }}
                       </div>
                     </span>
-                    <span class="w-2 h-2 bg-slate-900 border-r border-b border-slate-600 rotate-45 -mt-1"></span>
+                    <span class="w-2 h-2 bg-slate-900 border-t border-r border-slate-600 rotate-45 -ml-1"></span>
                   </span>
                 </span>
                 <span v-else class="text-gray-500">0</span>
               </td>
 
               <!-- ADDED: Team championships cell with tooltip -->
-              <td class="px-6 py-4 text-center">
+              <td class="px-3 py-2 text-center">
                 <span
                   v-if="team.teamChampionships > 0"
                   class="relative group cursor-default font-semibold text-yellow-400"
                 >
                   {{ team.teamChampionships }}
-                  <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-10">
+                  <span class="absolute right-full top-1/2 -translate-y-1/2 mr-2 hidden group-hover:flex flex-row items-center z-10">
                     <span class="bg-slate-900 text-white text-xs rounded px-3 py-2 whitespace-nowrap shadow-lg border border-slate-600">
                       <div v-for="season in team.teamChampionshipSeasons" :key="season">
                         🏆 {{ formatSeason(season) }}
                       </div>
                     </span>
-                    <span class="w-2 h-2 bg-slate-900 border-r border-b border-slate-600 rotate-45 -mt-1"></span>
+                    <span class="w-2 h-2 bg-slate-900 border-t border-r border-slate-600 rotate-45 -ml-1"></span>
                   </span>
                 </span>
                 <span v-else class="text-gray-500">0</span>
