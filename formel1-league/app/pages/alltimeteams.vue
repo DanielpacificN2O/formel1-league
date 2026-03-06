@@ -286,11 +286,11 @@ function formatSeason(seasonCode) {
                 {{ team.totalPoints }}
               </td>
 
-              <td class="px-4 py-4 text-center text-gray-300">
+              <td class="px-2 py-4 text-center text-gray-300">
                 {{ formatSeason(team.firstSeason) }}
               </td>
 
-              <td class="px-4s py-4 text-center text-gray-300">
+              <td class="px-2 py-4 text-center text-gray-300">
                 {{ formatSeason(team.lastSeason) }}
               </td>
 
