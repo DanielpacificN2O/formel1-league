@@ -239,23 +239,23 @@ onMounted(() => {
                   {{ index + 1 }}
                 </span>
               </td>
-              <td class="px-6 py-4 text-center text-white font-medium">
+              <td class="px-6 py-4 text-left text-white font-medium">
                 {{ driver.name }}
               </td>
-              <td class="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-300 font-semibold">
+              <td class="px-6 py-4 text-center text-white font-medium">
                 {{ driver.totalWins }}
               </td>
-              <td class="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-300">
+              <td class="px-6 py-4 text-center text-white font-medium">
                 {{ driver.totalPodiums }}
               </td>
-              <td class="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-300">
+              <td class="px-6 py-4 text-center text-white font-medium">
                 {{ driver.totalPoles }}
               </td>
-              <td class="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-300">
+              <td class="px-6 py-4 text-center text-white font-medium">
                 {{ driver.totalPoints }}
               </td>
               <!-- ADDED: Championships cell with hover tooltip showing seasons -->
-              <td class="px-6 py-4 text-center whitespace-nowrap text-sm text-gray-300">
+              <td class="px-6 py-4 text-center text-white font-medium">
                 <span
                   v-if="driver.totalChampionships > 0"
                   class="relative group cursor-default font-semibold text-yellow-400"
