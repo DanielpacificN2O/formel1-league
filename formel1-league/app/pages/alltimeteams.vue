@@ -245,8 +245,8 @@ function formatSeason(seasonCode) {
                   Points {{ sortBy === 'points' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
                 </button>
               </th>
-              <th class="px-6 py-3 text-xs text-gray-300 uppercase">First Season</th>
-              <th class="px-6 py-3 text-xs text-gray-300 uppercase">Last Season</th>
+              <th class="px-4 py-3 text-xs text-gray-300 uppercase">First Season</th>
+              <th class="px-4 py-3 text-xs text-gray-300 uppercase">Last Season</th>
               <th class="px-6 py-3 text-xs text-gray-300 uppercase">Top 3 Drivers ({{ sortBy.charAt(0).toUpperCase() + sortBy.slice(1) }})</th>
             </tr>
           </thead>
@@ -286,11 +286,11 @@ function formatSeason(seasonCode) {
                 {{ team.totalPoints }}
               </td>
 
-              <td class="px-2 py-4 text-center text-gray-300">
+              <td class="px-4 py-4 text-center text-gray-300">
                 {{ formatSeason(team.firstSeason) }}
               </td>
 
-              <td class="px-2 py-4 text-center text-gray-300">
+              <td class="px-4 py-4 text-center text-gray-300">
                 {{ formatSeason(team.lastSeason) }}
               </td>
 
