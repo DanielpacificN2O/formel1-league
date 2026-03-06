@@ -36,7 +36,6 @@ async function getRacerSeasons() {
         Poles,
         Wins,
         Podiums,
-        Champion,
         Racer (
           id,
           Name
@@ -60,6 +59,20 @@ async function getRacerSeasons() {
 const allTimeStats = computed(() => {
   const statsMap = new Map()
 
+  // CHANGED: First pass — find the championship winner per season (most points)
+  const seasonWinnerMap = new Map()
+  racerSeasons.value.forEach(entry => {
+    const season = entry.Seasons?.Season
+    const racerId = entry.Racer?.id
+    const points = entry.Points || 0
+    if (!season || !racerId) return
+
+    if (!seasonWinnerMap.has(season) || points > seasonWinnerMap.get(season).points) {
+      seasonWinnerMap.set(season, { racerId, points })
+    }
+  })
+
+  // Second pass — accumulate stats and assign championships
   racerSeasons.value.forEach(entry => {
     const racerId = entry.Racer?.id
     const racerName = entry.Racer?.Name
@@ -85,12 +98,11 @@ const allTimeStats = computed(() => {
     stats.totalWins += entry.Wins || 0
     stats.totalPodiums += entry.Podiums || 0
 
-    // ADDED: if this entry is a championship-winning season, record it
-    if (entry.Champion) {
+    // CHANGED: award championship if this driver had the most points that season
+    const season = entry.Seasons?.Season
+    if (season && seasonWinnerMap.get(season)?.racerId === racerId) {
       stats.totalChampionships += 1
-      if (entry.Seasons?.Season) {
-        stats.championshipSeasons.push(entry.Seasons.Season)
-      }
+      stats.championshipSeasons.push(season)
     }
   })
 
