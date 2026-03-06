@@ -220,7 +220,7 @@ onMounted(() => {
               </th>
               <!-- ADDED: Championships column header -->
               <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
-                <button @click="changeSort('championships')" class="flex items-center gap-1 text-gray-300 hover:text-white">
+                <button @click="changeSort('championships')" class="flex text-center items-center gap-1 text-gray-300 hover:text-white">
                   Championships
                   <span v-if="sortBy === 'championships'">{{ sortDirection === 'desc' ? '▼' : '▲' }}</span>
                 </button>
