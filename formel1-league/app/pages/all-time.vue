@@ -194,33 +194,33 @@ onMounted(() => {
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                 Driver
               </th>
-              <th class="px-6 py-3 text-xs uppercase">
-                <button @click="changeSort('wins')" class="flex items-center gap-1 text-gray-300 hover:text-white">
+              <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+                <button @click="changeSort('wins')" class="mx-auto flex items-center gap-1 text-gray-300 hover:text-white">
                   Wins
                   <span v-if="sortBy === 'wins'">{{ sortDirection === 'desc' ? '▼' : '▲' }}</span>
                 </button>
               </th>
-              <th class="px-6 py-3 text-xs uppercase">
-                <button @click="changeSort('podiums')" class="flex items-center gap-1 text-gray-300 hover:text-white">
+              <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+                <button @click="changeSort('podiums')" class="mx-auto flex items-center gap-1 text-gray-300 hover:text-white">
                   Podiums
                   <span v-if="sortBy === 'podiums'">{{ sortDirection === 'desc' ? '▼' : '▲' }}</span>
                 </button>
               </th>
-              <th class="px-6 py-3 text-xs uppercase">
-                <button @click="changeSort('poles')" class="flex items-center gap-1 text-gray-300 hover:text-white">
+              <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+                <button @click="changeSort('poles')" class="mx-auto flex items-center gap-1 text-gray-300 hover:text-white">
                   Poles
                   <span v-if="sortBy === 'poles'">{{ sortDirection === 'desc' ? '▼' : '▲' }}</span>
                 </button>
               </th>
-              <th class="px-6 py-3 text-xs uppercase">
-                <button @click="changeSort('points')" class="flex items-center gap-1 text-gray-300 hover:text-white">
+              <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+                <button @click="changeSort('points')" class="mx-auto flex items-center gap-1 text-gray-300 hover:text-white">
                   Points
                   <span v-if="sortBy === 'points'">{{ sortDirection === 'desc' ? '▼' : '▲' }}</span>
                 </button>
               </th>
               <!-- ADDED: Championships column header -->
-              <th class="px-6 py-3 text-xs uppercase">
-                <button @click="changeSort('championships')" class="flex text-center items-center gap-1 text-gray-300 hover:text-white">
+              <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">
+                <button @click="changeSort('championships')" class="mx-auto flex items-center gap-1 text-gray-300 hover:text-white">
                   Championships
                   <span v-if="sortBy === 'championships'">{{ sortDirection === 'desc' ? '▼' : '▲' }}</span>
                 </button>
@@ -229,7 +229,7 @@ onMounted(() => {
           </thead>
           <tbody class="divide-y divide-slate-700">
             <tr v-for="(driver, index) in allTimeStats" :key="driver.id" :class="index < 3 ? 'bg-slate-750' : ''">
-              <td class="px-6 py-4 text-left whitespace-nowrap text-sm text-gray-300">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                 <span class="inline-flex items-center justify-center w-8 h-8 rounded-full font-bold" :class="{
                     'bg-yellow-500 text-slate-900': index === 0,
                     'bg-gray-400 text-slate-900': index === 1,
@@ -239,23 +239,23 @@ onMounted(() => {
                   {{ index + 1 }}
                 </span>
               </td>
-              <td class="px-6 py-4 text-left text-white font-medium">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
                 {{ driver.name }}
               </td>
-              <td class="px-6 py-4 text-center text-white font-medium">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 font-semibold text-center">
                 {{ driver.totalWins }}
               </td>
-              <td class="px-6 py-4 text-center text-white font-medium">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 text-center">
                 {{ driver.totalPodiums }}
               </td>
-              <td class="px-6 py-4 text-center text-white font-medium">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 text-center">
                 {{ driver.totalPoles }}
               </td>
-              <td class="px-6 py-4 text-center text-white font-medium">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 text-center">
                 {{ driver.totalPoints }}
               </td>
               <!-- ADDED: Championships cell with hover tooltip showing seasons -->
-              <td class="px-6 py-4 text-center text-white font-medium">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300 text-center">
                 <span
                   v-if="driver.totalChampionships > 0"
                   class="relative group cursor-default font-semibold text-yellow-400"
