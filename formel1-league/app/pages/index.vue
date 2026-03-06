@@ -10,10 +10,6 @@ const supabase = createClient(
   config.public.supabasePublishableKey
 )
 
-
-
-
-
 const racers = ref([])
 const seasons = ref([])
 const teams = ref([])
@@ -25,8 +21,27 @@ const showRacerModal = ref(false)
 const showSeasonModal = ref(false)
 const editMode = ref(false)
 const racerSeasons = ref([])
-const seasonPoints = ref([])  // Add this
+const seasonPoints = ref([])
 const loading = ref(false)
+
+// ADDED: ordered list of season values for prev/next navigation
+const seasonOptions = [
+  "S01","S02","S03","S04","S05","S06","S07","S08","S09","S10",
+  "S11","S12","S13","S14","S15","S16","S17","S18","S19","S20",
+  "S21","S22","S23","S24","S25","S26","S27","S28"
+]
+
+// ADDED: navigate to previous season, looping from S01 → S28
+function prevSeason() {
+  const idx = seasonOptions.indexOf(chosenSeason.value)
+  chosenSeason.value = seasonOptions[(idx - 1 + seasonOptions.length) % seasonOptions.length]
+}
+
+// ADDED: navigate to next season, looping from S28 → S01
+function nextSeason() {
+  const idx = seasonOptions.indexOf(chosenSeason.value)
+  chosenSeason.value = seasonOptions[(idx + 1) % seasonOptions.length]
+}
 
 // Form data
 const form = ref({
@@ -47,6 +62,15 @@ const racerForm = ref({
 const seasonForm = ref({
   Season: ''
 })
+
+function changeSort(field) {
+  if (sortBy.value === field) {
+    sortDirection.value = sortDirection.value === 'desc' ? 'asc' : 'desc'
+  } else {
+    sortBy.value = field
+    sortDirection.value = 'desc'
+  }
+}
 
 // Fetch all data
 async function getRacerSeasons() {
@@ -79,13 +103,9 @@ async function getRacerSeasons() {
 
     racerSeasons.value = data || []
 
-    // Update the ref instead of a local variable
     seasonPoints.value = racerSeasons.value.filter(element => {
-      console.log("MLD2", element.Seasons.Season)
       return element.Seasons.Season === chosenSeason.value
     })
-
-    console.log("SP1", seasonPoints.value)
   } catch (e) {
     console.error('Error fetching data:', e)
   } finally {
@@ -93,12 +113,11 @@ async function getRacerSeasons() {
   }
 }
 
-const seasonHD = computed (()=> {
-      return racerSeasons.value.filter(element => {
-      console.log("MLD2", element.Seasons.Season)
-      return element.Seasons.Season === chosenSeason.value
-    })
-}) 
+const seasonHD = computed(() => {
+  return racerSeasons.value.filter(element => {
+    return element.Seasons.Season === chosenSeason.value
+  })
+})
 
 // Fetch racers for dropdown
 async function getRacers() {
@@ -147,12 +166,11 @@ async function getSeasons() {
 
 // Create new entry
 async function createEntry() {
-  console.log("racer", form.value.Racer)
   try {
     const { error } = await supabase
       .from('Points')
       .insert({
-'RacerID': form.value.Racer,
+        'RacerID': form.value.Racer,
         'SeasonID': form.value.Season,
         'Team': form.value.Team, 
         'Points': form.value.Points,
@@ -177,7 +195,7 @@ async function updateEntry() {
     const { error } = await supabase
       .from('Points')
       .update({
-'RacerID': form.value.Racer,
+        'RacerID': form.value.Racer,
         'SeasonID': form.value.Season,
         'Team': form.value.Team,
         'Points': form.value.Points,
@@ -228,9 +246,7 @@ async function createRacer() {
   try {
     const { error } = await supabase
       .from('Racer')
-      .insert({
-        Name: racerForm.value.Name
-      })
+      .insert({ Name: racerForm.value.Name })
     
     if (error) throw error
     
@@ -242,6 +258,7 @@ async function createRacer() {
     alert('Error creating racer: ' + e.message)
   }
 }
+
 // Create new team
 async function createTeam() {
   if (!TeamForm.value.TeamName.trim()) {
@@ -252,9 +269,7 @@ async function createTeam() {
   try {
     const { error } = await supabase
       .from('Team')
-      .insert({
-        TeamName: TeamForm.value.TeamName
-      })
+      .insert({ TeamName: TeamForm.value.TeamName })
     
     if (error) throw error
     
@@ -277,9 +292,7 @@ async function createSeason() {
   try {
     const { error } = await supabase
       .from('Seasons')
-      .insert({
-        Season: seasonForm.value.Season
-      })
+      .insert({ Season: seasonForm.value.Season })
     
     if (error) throw error
     
@@ -292,23 +305,12 @@ async function createSeason() {
   }
 }
 
-// Open modal for create
 function openCreateModal() {
   editMode.value = false
-  form.value = {
-    id: null,
-    Racer: null,
-    Season: null,
-    Team: null,
-    Points: 0,
-    Poles: 0,
-    Wins: 0,
-    Podiums: 0
-  }
+  form.value = { id: null, Racer: null, Season: null, Team: null, Points: 0, Poles: 0, Wins: 0, Podiums: 0 }
   showModal.value = true
 }
 
-// Open modal for edit
 function openEditModal(item) {
   editMode.value = true
   form.value = {
@@ -324,37 +326,24 @@ function openEditModal(item) {
   showModal.value = true
 }
 
-// Open racer modal
 function openRacerModal() {
   racerForm.value = { Name: '' }
   showRacerModal.value = true
 }
 
-// Open team modal
 function openTeamModal() {
   TeamForm.value = { TeamName: '' }
   showTeamModal.value = true
 }
 
-// Open season modal
 function openSeasonModal() {
   seasonForm.value = { Season: '' }
   showSeasonModal.value = true
 }
 
-// Close modals
 function closeModal() {
   showModal.value = false
-  form.value = {
-    id: null,
-    Racer: null,
-    Season: null,
-    Team: null,
-    Points: 0,
-    Poles: 0,
-    Wins: 0,
-    Podiums: 0
-  }
+  form.value = { id: null, Racer: null, Season: null, Team: null, Points: 0, Poles: 0, Wins: 0, Podiums: 0 }
 }
 
 function closeRacerModal() {
@@ -372,13 +361,11 @@ function closeSeasonModal() {
   seasonForm.value = { Season: '' }
 }
 
-// Submit form
 function submitForm() {
   if (!form.value.Racer || !form.value.Season) {
     alert('Please fill in all fields')
     return
   }
-  
   if (editMode.value) {
     updateEntry()
   } else {
@@ -386,7 +373,6 @@ function submitForm() {
   }
 }
 
-// Initialize
 onMounted(() => {
   getRacerSeasons()
   getRacers()
@@ -401,8 +387,7 @@ onMounted(() => {
     <Navbar />
     
     <div class="container mx-auto px-4 py-8"> 
-      <!-- Header med knapper for å legge til innhold -->
-     <div class="flex flex-wrap gap-3 justify-between items-center mb-6">
+      <div class="flex flex-wrap gap-3 justify-between items-center mb-6">
         <h2 class="text-2xl font-bold">Season Standings</h2>
         <div class="flex flex-wrap gap-2">
           <button 
@@ -438,38 +423,55 @@ onMounted(() => {
         <table class="min-w-full bg-slate-800 rounded-lg overflow-hidden shadow-lg">
           <thead class="bg-slate-700">
             <tr>
-              <th class="px-6 py-3 text-left"> <!-- Valg av sesong -->
+              <!-- CHANGED: season selector now wrapped with prev/next arrow buttons -->
+              <th class="px-6 py-3 text-left">
                 <label for="season" class="sr-only">Season</label>
-                  <select v-model="chosenSeason" id="season" class="bg-gray-800 text-gray-300 text-xs font-medium uppercase tracking-wider border border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring">
-                  <option value="S01">Season 1</option>
-                  <option value="S02">Season 2</option>
-                  <option value="S03">Season 3</option>
-                  <option value="S04">Season 4</option>
-                  <option value="S05">Season 5</option>
-                  <option value="S06">Season 6</option>
-                  <option value="S07">Season 7</option>
-                  <option value="S08">Season 8</option>
-                  <option value="S09">Season 9</option>
-                  <option value="S10">Season 10</option>
-                  <option value="S11">Season 11</option>
-                  <option value="S12">Season 12</option>
-                  <option value="S13">Season 13</option>
-                  <option value="S14">Season 14</option>
-                  <option value="S15">Season 15</option>
-                  <option value="S16">Season 16</option>
-                  <option value="S17">Season 17</option>
-                  <option value="S18">Season 18</option>
-                  <option value="S19">Season 19</option>
-                  <option value="S20">Season 20</option>
-                  <option value="S21">Season 21</option>
-                  <option value="S22">Season 22</option>
-                  <option value="S23">Season 23</option>
-                  <option value="S24">Season 24</option>
-                  <option value="S25">Season 25</option>
-                  <option value="S26">Season 26</option>
-                  <option value="S27">Season 27</option>
-                  <option value="S28">Season 28</option>
-                </select>
+                <div class="flex items-center gap-1">
+                  <button
+                    @click="prevSeason"
+                    class="text-gray-300 hover:text-white font-bold px-1 text-base leading-none transition-colors"
+                    title="Previous season"
+                  >&#8249;</button>
+                  <select
+                    v-model="chosenSeason"
+                    id="season"
+                    class="bg-gray-800 text-gray-300 text-xs font-medium uppercase tracking-wider border border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring"
+                  >
+                    <option value="S01">Season 1</option>
+                    <option value="S02">Season 2</option>
+                    <option value="S03">Season 3</option>
+                    <option value="S04">Season 4</option>
+                    <option value="S05">Season 5</option>
+                    <option value="S06">Season 6</option>
+                    <option value="S07">Season 7</option>
+                    <option value="S08">Season 8</option>
+                    <option value="S09">Season 9</option>
+                    <option value="S10">Season 10</option>
+                    <option value="S11">Season 11</option>
+                    <option value="S12">Season 12</option>
+                    <option value="S13">Season 13</option>
+                    <option value="S14">Season 14</option>
+                    <option value="S15">Season 15</option>
+                    <option value="S16">Season 16</option>
+                    <option value="S17">Season 17</option>
+                    <option value="S18">Season 18</option>
+                    <option value="S19">Season 19</option>
+                    <option value="S20">Season 20</option>
+                    <option value="S21">Season 21</option>
+                    <option value="S22">Season 22</option>
+                    <option value="S23">Season 23</option>
+                    <option value="S24">Season 24</option>
+                    <option value="S25">Season 25</option>
+                    <option value="S26">Season 26</option>
+                    <option value="S27">Season 27</option>
+                    <option value="S28">Season 28</option>
+                  </select>
+                  <button
+                    @click="nextSeason"
+                    class="text-gray-300 hover:text-white font-bold px-1 text-base leading-none transition-colors"
+                    title="Next season"
+                  >&#8250;</button>
+                </div>
               </th>
               
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
@@ -561,133 +563,91 @@ onMounted(() => {
         </h3>
         
         <form @submit.prevent="submitForm" class="space-y-4">
-          <!-- Racer Dropdown -->
-         <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Racer
-            </label>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Racer</label>
             <select 
               v-model="form.Racer"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               required
             >
               <option :value="null">Select a racer</option>
-              <option 
-                v-for="racer in racers" 
-                :key="racer.id" 
-                :value="racer.id"
-              >
+              <option v-for="racer in racers" :key="racer.id" :value="racer.id">
                 {{ racer.Name }}
               </option>
             </select>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Team
-            </label>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Team</label>
             <select 
               v-model="form.Team"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               required
             >
               <option :value="null">Select a Team</option>
-              <option 
-                v-for="Team in teams" 
-                :key="Team?.id" 
-                :value="Team?.id"
-              >
+              <option v-for="Team in teams" :key="Team?.id" :value="Team?.id">
                 {{ Team.TeamName }}
               </option>
             </select>
           </div>
 
-          <!-- Season Dropdown -->
-         <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Season
-            </label>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Season</label>
             <select 
               v-model="form.Season"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               required
             >
               <option :value="null">Select a season</option>
-              <option 
-                v-for="season in seasons" 
-                :key="season.id" 
-                :value="season.id"
-              >
+              <option v-for="season in seasons" :key="season.id" :value="season.id">
                 {{ season.Season }}
               </option>
             </select>
           </div>
 
-          <!-- Points Input -->
-
-        
-
-        <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Points
-            </label>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Points</label>
             <input 
-              v-model.number="form.Points"
-              type="number"
+              v-model.number="form.Points" type="number"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               required
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Poles
-            </label>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Poles</label>
             <input 
-              v-model.number="form.Poles"
-              type="number"
+              v-model.number="form.Poles" type="number"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               required
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Wins
-            </label>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Wins</label>
             <input 
-              v-model.number="form.Wins"
-              type="number"
+              v-model.number="form.Wins" type="number"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               required
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Podiums
-            </label>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Podiums</label>
             <input 
-              v-model.number="form.Podiums"
-              type="number"
+              v-model.number="form.Podiums" type="number"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
               required
             />
           </div>
 
-          <!-- Buttons -->
-         <div class="flex justify-end space-x-3 pt-4">
-            <button 
-              type="button"
-              @click="closeModal"
-              class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
-            >
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" @click="closeModal"
+              class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors">
               Cancel
             </button>
-            <button 
-              type="submit"
-              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
+            <button type="submit"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
               {{ editMode ? 'Update' : 'Create' }}
             </button>
           </div>
@@ -703,35 +663,20 @@ onMounted(() => {
     >
       <div class="bg-slate-800 rounded-lg p-8 max-w-md w-full mx-4">
         <h3 class="text-xl text-white font-bold mb-6">Add New Racer</h3>
-        
         <form @submit.prevent="createRacer" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Racer Name
-            </label>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Racer Name</label>
             <input 
-              v-model="racerForm.Name"
-              type="text"
-              placeholder="Enter racer name"
+              v-model="racerForm.Name" type="text" placeholder="Enter racer name"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-green-500"
               required
             />
           </div>
-
           <div class="flex justify-end space-x-3 pt-4">
-            <button 
-              type="button"
-              @click="closeRacerModal"
-              class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit"
-              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-            >
-              Create Racer
-            </button>
+            <button type="button" @click="closeRacerModal"
+              class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors">Cancel</button>
+            <button type="submit"
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">Create Racer</button>
           </div>
         </form>
       </div>
@@ -745,77 +690,47 @@ onMounted(() => {
     >
       <div class="bg-slate-800 rounded-lg p-8 max-w-md w-full mx-4">
         <h3 class="text-xl text-white font-bold mb-6">Add New Team</h3>
-        
         <form @submit.prevent="createTeam" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Team Name
-            </label>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Team Name</label>
             <input 
-              v-model="TeamForm.TeamName"
-              type="text"
-              placeholder="Enter team name"
+              v-model="TeamForm.TeamName" type="text" placeholder="Enter team name"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-green-500"
               required
             />
           </div>
-
           <div class="flex justify-end space-x-3 pt-4">
-            <button 
-              type="button"
-              @click="closeTeamModal"
-              class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit"
-              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-            >
-              Create Team
-            </button>
+            <button type="button" @click="closeTeamModal"
+              class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors">Cancel</button>
+            <button type="submit"
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">Create Team</button>
           </div>
         </form>
       </div>
     </div>
 
     <!-- Season Modal -->
-  <div 
+    <div 
       v-if="showSeasonModal" 
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       @click.self="closeSeasonModal"
     >
       <div class="bg-slate-800 rounded-lg p-8 max-w-md w-full mx-4">
         <h3 class="text-xl text-white font-bold mb-6">Add New Season</h3>
-        
         <form @submit.prevent="createSeason" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-300 mb-2">
-              Season Name
-            </label>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Season Name</label>
             <input 
-              v-model="seasonForm.Season"
-              type="text"
-              placeholder="Enter season name (e.g., 2024)"
+              v-model="seasonForm.Season" type="text" placeholder="Enter season name (e.g., 2024)"
               class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
               required
             />
           </div>
-
           <div class="flex justify-end space-x-3 pt-4">
-            <button 
-              type="button"
-              @click="closeSeasonModal"
-              class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit"
-              class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-            >
-              Create Season
-            </button>
+            <button type="button" @click="closeSeasonModal"
+              class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors">Cancel</button>
+            <button type="submit"
+              class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">Create Season</button>
           </div>
         </form>
       </div>
