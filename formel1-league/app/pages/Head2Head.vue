@@ -34,6 +34,7 @@ async function getData() {
         Points,
         Wins,
         Podiums,
+        Poles,
         Racer ( id, Name ),
         Team ( id, TeamName ),
         Seasons ( id, Season )
@@ -71,6 +72,7 @@ const headToHeadStats = computed(() => {
         behind: 0,
         winDiff: 0,
         podiumDiff: 0,
+        poleDiff: 0,
         pointDiff: 0
       })
     }
@@ -87,6 +89,7 @@ const headToHeadStats = computed(() => {
       driverId,
       wins: entry.Wins || 0,
       podiums: entry.Podiums || 0,
+      poles: entry.Poles || 0,
       points: entry.Points || 0
     })
   })
@@ -120,6 +123,10 @@ const headToHeadStats = computed(() => {
     // Podiums difference
     driver1.podiumDiff += (d1.podiums - d2.podiums)
     driver2.podiumDiff += (d2.podiums - d1.podiums)
+
+    // Poles difference
+    driver1.poleDiff += (d1.poles - d2.poles)
+    driver2.poleDiff += (d2.poles - d1.poles)
 
     // Points difference
     driver1.pointDiff += (d1.points - d2.points)
@@ -200,6 +207,13 @@ onMounted(() => {
               </th>
 
               <th class="px-6 py-3 text-xs uppercase">
+                <button @click="changeSort('poleDiff')" class="text-gray-300 hover:text-white">
+                  Pole Diff
+                  {{ sortBy === 'poleDiff' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
+                </button>
+              </th>
+
+              <th class="px-6 py-3 text-xs uppercase">
                 <button @click="changeSort('pointDiff')" class="text-gray-300 hover:text-white">
                   Points Diff
                   {{ sortBy === 'pointDiff' ? (sortDirection === 'desc' ? '▼' : '▲') : '' }}
@@ -241,6 +255,10 @@ onMounted(() => {
 
               <td class="px-6 py-4 text-center text-gray-300">
                 {{ driver.podiumDiff }}
+              </td>
+
+              <td class="px-6 py-4 text-center text-gray-300">
+                {{ driver.poleDiff }}
               </td>
 
               <td class="px-6 py-4 text-center text-gray-300">
