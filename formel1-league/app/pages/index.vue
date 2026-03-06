@@ -43,6 +43,24 @@ function nextSeason() {
   chosenSeason.value = seasonOptions[(idx + 1) % seasonOptions.length]
 }
 
+// ADDED: human-readable label, e.g. "S03" -> "Season 3"
+function seasonLabel(value) {
+  const num = parseInt(value.replace('S', ''), 10)
+  return `Season ${num}`
+}
+
+// ADDED: label shown on the prev button - the season it would go to
+const prevSeasonLabel = computed(() => {
+  const idx = seasonOptions.indexOf(chosenSeason.value)
+  return seasonLabel(seasonOptions[(idx - 1 + seasonOptions.length) % seasonOptions.length])
+})
+
+// ADDED: label shown on the next button - the season it would go to
+const nextSeasonLabel = computed(() => {
+  const idx = seasonOptions.indexOf(chosenSeason.value)
+  return seasonLabel(seasonOptions[(idx + 1) % seasonOptions.length])
+})
+
 // Form data
 const form = ref({
   id: null,
@@ -429,9 +447,8 @@ onMounted(() => {
                 <div class="flex items-center gap-1">
                   <button
                     @click="prevSeason"
-                    class="text-gray-300 hover:text-white font-bold px-1 text-base leading-none transition-colors"
-                    title="Previous season"
-                  >&#8249;</button>
+                    class="flex items-center gap-1 text-gray-300 hover:text-white text-xs font-medium px-2 py-1 rounded bg-slate-600 hover:bg-slate-500 transition-colors whitespace-nowrap"
+                  >&#8249; {{ prevSeasonLabel }}</button>
                   <select
                     v-model="chosenSeason"
                     id="season"
@@ -468,9 +485,8 @@ onMounted(() => {
                   </select>
                   <button
                     @click="nextSeason"
-                    class="text-gray-300 hover:text-white font-bold px-1 text-base leading-none transition-colors"
-                    title="Next season"
-                  >&#8250;</button>
+                    class="flex items-center gap-1 text-gray-300 hover:text-white text-xs font-medium px-2 py-1 rounded bg-slate-600 hover:bg-slate-500 transition-colors whitespace-nowrap"
+                  >{{ nextSeasonLabel }} &#8250;</button>
                 </div>
               </th>
               
