@@ -149,6 +149,7 @@ onMounted(() => {
                   <option value="S26">Season 26</option>
                   <option value="S27">Season 27</option>
                   <option value="S28">Season 28</option>
+                  <option value="S29">Season 29</option>
                 </select>
               </th>
               <th class="px-6 py-3 text-left text-xs text-gray-300 uppercase">Team</th>
