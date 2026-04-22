@@ -14,6 +14,36 @@ const racerSeasons = ref([])
 const chosenSeason = ref("S01")
 const loading = ref(false)
 
+const seasonOptions = [
+  "S01","S02","S03","S04","S05","S06","S07","S08","S09","S10",
+  "S11","S12","S13","S14","S15","S16","S17","S18","S19","S20",
+  "S21","S22","S23","S24","S25","S26","S27","S28","S29"
+]
+
+function prevSeason() {
+  const idx = seasonOptions.indexOf(chosenSeason.value)
+  chosenSeason.value = seasonOptions[(idx - 1 + seasonOptions.length) % seasonOptions.length]
+}
+
+function nextSeason() {
+  const idx = seasonOptions.indexOf(chosenSeason.value)
+  chosenSeason.value = seasonOptions[(idx + 1) % seasonOptions.length]
+}
+
+function seasonLabel(value) {
+  return `S${parseInt(value.replace('S', ''), 10)}`
+}
+
+const prevSeasonLabel = computed(() => {
+  const idx = seasonOptions.indexOf(chosenSeason.value)
+  return seasonLabel(seasonOptions[(idx - 1 + seasonOptions.length) % seasonOptions.length])
+})
+
+const nextSeasonLabel = computed(() => {
+  const idx = seasonOptions.indexOf(chosenSeason.value)
+  return seasonLabel(seasonOptions[(idx + 1) % seasonOptions.length])
+})
+
 // Fetch all season data
 async function getRacerSeasons() {
   loading.value = true
@@ -101,7 +131,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="bg-slate-200">
+  <div class="bg-slate-200 min-h-screen">
     <Hero />
     <Navbar />
 
@@ -118,39 +148,54 @@ onMounted(() => {
           
           <thead class="bg-slate-700">
             <tr>
-              <th class="px-6 py-3">
-                <select v-model="chosenSeason"
-                  class="bg-gray-800 text-gray-300 text-xs uppercase border border-gray-600 rounded px-2 py-1">
-                  <option value="S01">Season 1</option>
-                  <option value="S02">Season 2</option>
-                  <option value="S03">Season 3</option>
-                  <option value="S04">Season 4</option>
-                  <option value="S05">Season 5</option>
-                  <option value="S06">Season 6</option>
-                  <option value="S07">Season 7</option>
-                  <option value="S08">Season 8</option>
-                  <option value="S09">Season 9</option>
-                  <option value="S10">Season 10</option>
-                  <option value="S11">Season 11</option>
-                  <option value="S12">Season 12</option>
-                  <option value="S13">Season 13</option>
-                  <option value="S14">Season 14</option>
-                  <option value="S15">Season 15</option>
-                  <option value="S16">Season 16</option>
-                  <option value="S17">Season 17</option>
-                  <option value="S18">Season 18</option>
-                  <option value="S19">Season 19</option>
-                  <option value="S20">Season 20</option>
-                  <option value="S21">Season 21</option>
-                  <option value="S22">Season 22</option>
-                  <option value="S23">Season 23</option>
-                  <option value="S24">Season 24</option>
-                  <option value="S25">Season 25</option>
-                  <option value="S26">Season 26</option>
-                  <option value="S27">Season 27</option>
-                  <option value="S28">Season 28</option>
-                  <option value="S29">Season 29</option>
-                </select>
+              <th class="px-2 py-3 text-left w-px whitespace-nowrap">
+                <label for="season" class="sr-only">Season</label>
+                <div class="flex items-center gap-1">
+                  <button
+                    @click="prevSeason"
+                    @keydown.left.prevent="prevSeason"
+                    @keydown.right.prevent="nextSeason"
+                    class="flex items-center gap-1 text-gray-300 hover:text-white text-xs font-medium px-2 py-1 rounded bg-slate-600 hover:bg-slate-500 transition-colors whitespace-nowrap"
+                  >&#8249; {{ prevSeasonLabel }}</button>
+                  <select v-model="chosenSeason" id="season"
+                    class="bg-gray-800 text-gray-300 text-xs font-medium uppercase tracking-wider border border-gray-600 rounded px-2 py-1 focus:outline-none focus:ring">
+                    <option value="S01">Season 1</option>
+                    <option value="S02">Season 2</option>
+                    <option value="S03">Season 3</option>
+                    <option value="S04">Season 4</option>
+                    <option value="S05">Season 5</option>
+                    <option value="S06">Season 6</option>
+                    <option value="S07">Season 7</option>
+                    <option value="S08">Season 8</option>
+                    <option value="S09">Season 9</option>
+                    <option value="S10">Season 10</option>
+                    <option value="S11">Season 11</option>
+                    <option value="S12">Season 12</option>
+                    <option value="S13">Season 13</option>
+                    <option value="S14">Season 14</option>
+                    <option value="S15">Season 15</option>
+                    <option value="S16">Season 16</option>
+                    <option value="S17">Season 17</option>
+                    <option value="S18">Season 18</option>
+                    <option value="S19">Season 19</option>
+                    <option value="S20">Season 20</option>
+                    <option value="S21">Season 21</option>
+                    <option value="S22">Season 22</option>
+                    <option value="S23">Season 23</option>
+                    <option value="S24">Season 24</option>
+                    <option value="S25">Season 25</option>
+                    <option value="S26">Season 26</option>
+                    <option value="S27">Season 27</option>
+                    <option value="S28">Season 28</option>
+                    <option value="S29">Season 29</option>
+                  </select>
+                  <button
+                    @click="nextSeason"
+                    @keydown.left.prevent="prevSeason"
+                    @keydown.right.prevent="nextSeason"
+                    class="flex items-center gap-1 text-gray-300 hover:text-white text-xs font-medium px-2 py-1 rounded bg-slate-600 hover:bg-slate-500 transition-colors whitespace-nowrap"
+                  >{{ nextSeasonLabel }} &#8250;</button>
+                </div>
               </th>
               <th class="px-6 py-3 text-left text-xs text-gray-300 uppercase">Team</th>
               <th class="px-6 py-3 text-left text-xs text-gray-300 uppercase">Driver 1</th>

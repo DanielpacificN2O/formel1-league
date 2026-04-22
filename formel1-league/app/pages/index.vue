@@ -28,7 +28,7 @@ const loading = ref(false)
 const seasonOptions = [
   "S01","S02","S03","S04","S05","S06","S07","S08","S09","S10",
   "S11","S12","S13","S14","S15","S16","S17","S18","S19","S20",
-  "S21","S22","S23","S24","S25","S26","S27","S28"
+  "S21","S22","S23","S24","S25","S26","S27","S28","S29"
 ]
 
 // ADDED: navigate to previous season, looping from S01 → S28
@@ -447,6 +447,8 @@ onMounted(() => {
                 <div class="flex items-center gap-1">
                   <button
                     @click="prevSeason"
+                    @keydown.left.prevent="prevSeason"
+                    @keydown.right.prevent="nextSeason"
                     class="flex items-center gap-1 text-gray-300 hover:text-white text-xs font-medium px-2 py-1 rounded bg-slate-600 hover:bg-slate-500 transition-colors whitespace-nowrap"
                   >&#8249; {{ prevSeasonLabel }}</button>
                   <select
@@ -486,6 +488,8 @@ onMounted(() => {
                   </select>
                   <button
                     @click="nextSeason"
+                    @keydown.left.prevent="prevSeason"
+                    @keydown.right.prevent="nextSeason"
                     class="flex items-center gap-1 text-gray-300 hover:text-white text-xs font-medium px-2 py-1 rounded bg-slate-600 hover:bg-slate-500 transition-colors whitespace-nowrap"
                   >{{ nextSeasonLabel }} &#8250;</button>
                 </div>

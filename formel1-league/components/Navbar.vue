@@ -48,12 +48,26 @@ const toggleMobileMenu = () => {
             All-Time Team Stats
           </NuxtLink>
           
-          <NuxtLink 
-            to="/Head2Head" 
+          <NuxtLink
+            to="/Head2Head"
             class="text-gray-300 hover:text-white transition-colors"
             active-class="text-white font-semibold"
           >
             Drivers Head 2 Head
+          </NuxtLink>
+          <NuxtLink
+            to="/driver-history"
+            class="text-gray-300 hover:text-white transition-colors"
+            active-class="text-white font-semibold"
+          >
+            Driver History
+          </NuxtLink>
+          <NuxtLink
+            to="/team-history"
+            class="text-gray-300 hover:text-white transition-colors"
+            active-class="text-white font-semibold"
+          >
+            Team History
           </NuxtLink>
 
         </div>
