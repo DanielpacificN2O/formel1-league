@@ -330,7 +330,6 @@ onMounted(() => {
                   >{{ nextSeasonLabel }} &#8250;</button>
                 </div>
               </th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Track</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Grand Prix</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Polesitter</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Pole Team</th>
@@ -343,14 +342,16 @@ onMounted(() => {
           </thead>
           <tbody class="divide-y divide-slate-700">
             <tr v-if="seasonResults.length === 0">
-              <td colspan="10" class="px-6 py-8 text-center text-gray-400">
+              <td colspan="9" class="px-6 py-8 text-center text-gray-400">
                 No race results for this season yet
               </td>
             </tr>
             <tr v-for="item in seasonResults" :key="item.id" class="hover:bg-slate-750">
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-400 font-mono">R{{ item.Round }}</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-white">{{ item.Track }}</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{{ item.GrandPrix }}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="text-xs text-gray-400">{{ item.Track }}</div>
+                <div class="text-sm font-medium text-white">{{ item.GrandPrix }}</div>
+              </td>
               <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{{ item.Polesitter?.Name || '—' }}</td>
               <td class="px-4 py-3 whitespace-nowrap text-sm">
                 <span
