@@ -65,19 +65,41 @@ const form = ref({
 })
 
 const teamColors = {
-  'Williams': '#00A0DD',
-  'McLaren': '#FF8000',
-  'Ferrari': '#DC0000',
-  'Surtees': '#C8A400',
-  'Tyrrell': '#5C2D91',
-  'Lotus': '#5D6B00',
-  'Brabham': '#1B3A6B',
-  'Shadow': '#4A4A4A',
-  'March': '#C84B00',
+  'Ferrari':         { bg: '#e8002d', text: '#ffffff' },
+  'McLaren':         { bg: '#ff8000', text: '#0067ff' },
+  'Williams':        { bg: '#00a0dd', text: '#ffd700' },
+  'Lotus-Renault':   { bg: '#333333', text: '#ffd700' },
+  'Tyrrell':         { bg: '#2c0066', text: '#ffffff' },
+  'Brabham':         { bg: '#1c3a6e', text: '#ffffff' },
+  'Benetton':        { bg: '#ffd700', text: '#004225' },
+  'Shadow':          { bg: '#c8c8c8', text: '#ff7043' },
+  'March':           { bg: '#f07800', text: '#ffffff' },
+  'Surtees':         { bg: '#e8e46e', text: '#0a0a40' },
+  'Embassy Hill':    { bg: '#e8e8e8', text: '#d94545' },
+  'Arrows':          { bg: '#cccccc', text: '#cc5500' },
+  'Ligier':          { bg: '#74b9e5', text: '#ffffff' },
+  'Jordan':          { bg: '#347c47', text: '#c8a000' },
+  'Minardi':         { bg: '#c8a000', text: '#1a0033' },
+  'STR-Minardi':     { bg: '#c8a000', text: '#1a0033' },
+  'Caterham-Jordan': { bg: '#ffd700', text: '#003300' },
+  'Petronas':        { bg: '#d0f0ff', text: '#111111' },
+  'Jaguar':          { bg: '#1f6b35', text: '#ffffff' },
+  'Honda':           { bg: '#f5f5f5', text: '#cc0000' },
+  'Toyota':          { bg: '#e8504a', text: '#ffffff' },
+  'Super Aguri':     { bg: '#ffb3b3', text: '#111111' },
+  'BMW':             { bg: '#7ab6e5', text: '#111111' },
+  'Red Bull':        { bg: '#1e0047', text: '#cc1e1e' },
+  'Force India':     { bg: '#ff9500', text: '#00873e' },
+  'Mercedes':        { bg: '#e0e0e0', text: '#00d2be' },
+  'Sauber':          { bg: '#9b9b9b', text: '#006f3c' },
+  'BWT':             { bg: '#e4006d', text: '#1e3fff' },
 }
 
-function getTeamColor(teamName) {
-  return teamColors[teamName] || '#4B5563'
+function getTeamStyle(teamName) {
+  const c = teamColors[teamName]
+  return c
+    ? { backgroundColor: c.bg, color: c.text }
+    : { backgroundColor: '#4b5563', color: '#ffffff' }
 }
 
 async function getRaceResults() {
@@ -214,6 +236,7 @@ async function deleteEntry(id) {
 async function openCreateModal() {
   editMode.value = false
   const currentSeason = seasons.value.find(s => s.Season === chosenSeason.value)
+  await fetchSeasonDriverTeams(currentSeason?.id || null)
   form.value = {
     id: null,
     Round: seasonResults.value.length + 1,
@@ -227,12 +250,12 @@ async function openCreateModal() {
     P2ID: null,
     P3ID: null,
   }
-  await fetchSeasonDriverTeams(form.value.SeasonID)
   showModal.value = true
 }
 
 async function openEditModal(item) {
   editMode.value = true
+  await fetchSeasonDriverTeams(item.Season?.id || null)
   form.value = {
     id: item.id,
     Round: item.Round,
@@ -246,7 +269,6 @@ async function openEditModal(item) {
     P2ID: item.P2?.id || null,
     P3ID: item.P3?.id || null,
   }
-  await fetchSeasonDriverTeams(form.value.SeasonID)
   showModal.value = true
 }
 
@@ -256,8 +278,8 @@ function closeModal() {
 
 watch(() => form.value.SeasonID, async (newSeasonId) => {
   await fetchSeasonDriverTeams(newSeasonId)
-  form.value.PolesitterTeamID = null
-  form.value.WinnerTeamID = null
+  form.value.PolesitterTeamID = form.value.PolesitterID ? (seasonDriverTeamMap.value[form.value.PolesitterID] ?? null) : null
+  form.value.WinnerTeamID = form.value.WinnerID ? (seasonDriverTeamMap.value[form.value.WinnerID] ?? null) : null
 })
 
 watch(() => form.value.PolesitterID, (driverId) => {
@@ -356,8 +378,8 @@ onMounted(() => {
               <td class="px-4 py-3 whitespace-nowrap text-sm">
                 <span
                   v-if="item.PolesitterTeam"
-                  class="px-2 py-0.5 rounded text-white text-xs font-semibold"
-                  :style="{ backgroundColor: getTeamColor(item.PolesitterTeam.TeamName) }"
+                  class="px-2 py-0.5 rounded text-xs font-semibold"
+                  :style="getTeamStyle(item.PolesitterTeam.TeamName)"
                 >{{ item.PolesitterTeam.TeamName }}</span>
                 <span v-else class="text-gray-500">—</span>
               </td>
@@ -365,8 +387,8 @@ onMounted(() => {
               <td class="px-4 py-3 whitespace-nowrap text-sm">
                 <span
                   v-if="item.WinnerTeam"
-                  class="px-2 py-0.5 rounded text-white text-xs font-semibold"
-                  :style="{ backgroundColor: getTeamColor(item.WinnerTeam.TeamName) }"
+                  class="px-2 py-0.5 rounded text-xs font-semibold"
+                  :style="getTeamStyle(item.WinnerTeam.TeamName)"
                 >{{ item.WinnerTeam.TeamName }}</span>
                 <span v-else class="text-gray-500">—</span>
               </td>
