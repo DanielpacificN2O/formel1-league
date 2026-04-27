@@ -69,6 +69,13 @@ const toggleMobileMenu = () => {
           >
             Team History
           </NuxtLink>
+          <NuxtLink
+            to="/race-results"
+            class="text-gray-300 hover:text-white transition-colors"
+            active-class="text-white font-semibold"
+          >
+            Race Results
+          </NuxtLink>
 
         </div>
 
@@ -109,13 +116,21 @@ const toggleMobileMenu = () => {
         >
           Standings
         </NuxtLink>
-        <NuxtLink 
-          to="/all-time" 
+        <NuxtLink
+          to="/all-time"
           class="block py-2 text-gray-300 hover:text-white transition-colors"
           active-class="text-white font-semibold"
           @click="mobileMenuOpen = false"
         >
           All-Time Stats
+        </NuxtLink>
+        <NuxtLink
+          to="/race-results"
+          class="block py-2 text-gray-300 hover:text-white transition-colors"
+          active-class="text-white font-semibold"
+          @click="mobileMenuOpen = false"
+        >
+          Race Results
         </NuxtLink>
       </div>
     </div>
