@@ -1,7 +1,7 @@
 <script setup>
 import Navbar from '../components/Navbar.vue';
 import Hero from '../components/Hero.vue';
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { createClient } from '@supabase/supabase-js';
 
 const config = useRuntimeConfig()
@@ -14,6 +14,7 @@ const racers = ref([])
 const seasons = ref([])
 const teams = ref([])
 const raceResults = ref([])
+const seasonDriverTeamMap = ref({})
 const loading = ref(false)
 const chosenSeason = ref('S01')
 const showModal = ref(false)
@@ -134,6 +135,17 @@ async function getSeasons() {
   }
 }
 
+async function fetchSeasonDriverTeams(seasonId) {
+  if (!seasonId) return
+  const { data } = await supabase
+    .from('Points')
+    .select('RacerID, Team')
+    .eq('SeasonID', seasonId)
+  if (data) {
+    seasonDriverTeamMap.value = Object.fromEntries(data.map(p => [p.RacerID, p.Team]))
+  }
+}
+
 const seasonResults = computed(() =>
   raceResults.value.filter(r => r.Season?.Season === chosenSeason.value)
 )
@@ -199,7 +211,7 @@ async function deleteEntry(id) {
   }
 }
 
-function openCreateModal() {
+async function openCreateModal() {
   editMode.value = false
   const currentSeason = seasons.value.find(s => s.Season === chosenSeason.value)
   form.value = {
@@ -215,10 +227,11 @@ function openCreateModal() {
     P2ID: null,
     P3ID: null,
   }
+  await fetchSeasonDriverTeams(form.value.SeasonID)
   showModal.value = true
 }
 
-function openEditModal(item) {
+async function openEditModal(item) {
   editMode.value = true
   form.value = {
     id: item.id,
@@ -233,12 +246,27 @@ function openEditModal(item) {
     P2ID: item.P2?.id || null,
     P3ID: item.P3?.id || null,
   }
+  await fetchSeasonDriverTeams(form.value.SeasonID)
   showModal.value = true
 }
 
 function closeModal() {
   showModal.value = false
 }
+
+watch(() => form.value.SeasonID, async (newSeasonId) => {
+  await fetchSeasonDriverTeams(newSeasonId)
+  form.value.PolesitterTeamID = null
+  form.value.WinnerTeamID = null
+})
+
+watch(() => form.value.PolesitterID, (driverId) => {
+  form.value.PolesitterTeamID = driverId ? (seasonDriverTeamMap.value[driverId] ?? null) : null
+})
+
+watch(() => form.value.WinnerID, (driverId) => {
+  form.value.WinnerTeamID = driverId ? (seasonDriverTeamMap.value[driverId] ?? null) : null
+})
 
 function submitForm() {
   if (!form.value.SeasonID) {
@@ -411,50 +439,26 @@ onMounted(() => {
             />
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Polesitter</label>
-              <select
-                v-model="form.PolesitterID"
-                class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-              >
-                <option :value="null">Select driver</option>
-                <option v-for="r in racers" :key="r.id" :value="r.id">{{ r.Name }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Pole Team</label>
-              <select
-                v-model="form.PolesitterTeamID"
-                class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-              >
-                <option :value="null">Select team</option>
-                <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.TeamName }}</option>
-              </select>
-            </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Polesitter</label>
+            <select
+              v-model="form.PolesitterID"
+              class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+            >
+              <option :value="null">Select driver</option>
+              <option v-for="r in racers" :key="r.id" :value="r.id">{{ r.Name }}</option>
+            </select>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Race Winner</label>
-              <select
-                v-model="form.WinnerID"
-                class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-              >
-                <option :value="null">Select driver</option>
-                <option v-for="r in racers" :key="r.id" :value="r.id">{{ r.Name }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-300 mb-2">Winning Team</label>
-              <select
-                v-model="form.WinnerTeamID"
-                class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-              >
-                <option :value="null">Select team</option>
-                <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.TeamName }}</option>
-              </select>
-            </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Race Winner</label>
+            <select
+              v-model="form.WinnerID"
+              class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+            >
+              <option :value="null">Select driver</option>
+              <option v-for="r in racers" :key="r.id" :value="r.id">{{ r.Name }}</option>
+            </select>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
