@@ -13,9 +13,7 @@ const toggleMobileMenu = () => {
     <div class="container mx-auto px-4">
       <div class="flex justify-between items-center h-16">
         <!-- Logo/Brand -->
-        <NuxtLink to="/" class="text-white text-xl font-bold hover:text-blue-400 transition-colors">
-          NRS
-        </NuxtLink>
+        
 
         <!-- Desktop Navigation -->
         <div class="hidden md:flex space-x-8">
@@ -34,11 +32,26 @@ const toggleMobileMenu = () => {
             Team Standings
           </NuxtLink>
           <NuxtLink
+            to="/race-results"
+            class="text-gray-300 hover:text-white transition-colors"
+            active-class="text-white font-semibold"
+          >
+            Race Results
+          </NuxtLink>
+          
+          <NuxtLink
             to="/all-time"
             class="text-gray-300 hover:text-white transition-colors"
             active-class="text-white font-semibold"
           >
             All-Time Stats
+          </NuxtLink>
+          <NuxtLink
+            to="/alltimeteams"
+            class="text-gray-300 hover:text-white transition-colors"
+            active-class="text-white font-semibold"
+          >
+            All-Time Team Stats
           </NuxtLink>
           <NuxtLink
             to="/drivers"
@@ -54,13 +67,7 @@ const toggleMobileMenu = () => {
           >
             Team Profiles
           </NuxtLink>
-          <NuxtLink
-            to="/alltimeteams"
-            class="text-gray-300 hover:text-white transition-colors"
-            active-class="text-white font-semibold"
-          >
-            All-Time Team Stats
-          </NuxtLink>
+          
           
           <NuxtLink
             to="/Head2Head"
@@ -83,13 +90,7 @@ const toggleMobileMenu = () => {
           >
             Team History
           </NuxtLink>
-          <NuxtLink
-            to="/race-results"
-            class="text-gray-300 hover:text-white transition-colors"
-            active-class="text-white font-semibold"
-          >
-            Race Results
-          </NuxtLink>
+          
 
         </div>
 
