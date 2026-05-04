@@ -1,6 +1,6 @@
 <script setup>
-import Navbar from '../components/Navbar.vue';
-import Hero from '../components/Hero.vue';
+import Navbar from '../components/Navbar.vue'
+import Hero from '../components/Hero.vue'
 import { ref, computed, onMounted } from 'vue'
 import { createClient } from '@supabase/supabase-js'
 
@@ -8,7 +8,7 @@ const config = useRuntimeConfig()
 const supabase = createClient(config.public.supabaseUrl, config.public.supabasePublishableKey)
 const route = useRoute()
 
-const driverName = computed(() => decodeURIComponent(route.params.driver))
+const teamName = computed(() => decodeURIComponent(route.params.team))
 
 const allPoints = ref([])
 const raceWins = ref([])
@@ -17,11 +17,10 @@ const raceP2 = ref([])
 const raceP3 = ref([])
 const loading = ref(false)
 
-// Track the active sort filters
-const seasonSortKey = ref('wins') // 'wins', 'podiums', 'poles', 'points'
-const trackSortKey = ref('wins')   // 'wins', 'podiums', 'poles', 'points'
+const seasonSortKey = ref('wins')
+const trackSortKey = ref('wins')
+const driverSortKey = ref('wins')
 
-// Helper to clean track names and check for variations
 const processTrackName = (rawName) => {
   if (!rawName) return { name: 'Unknown', hasVariation: false }
   const hasVariation = rawName.includes('(Long)')
@@ -29,9 +28,100 @@ const processTrackName = (rawName) => {
   return { name: cleanName, hasVariation }
 }
 
-const topSeasons = computed(() => {
-  const seasons = seasonRows.value.map(s => ({ ...s }))
-  return seasons
+const teamEntries = computed(() =>
+  allPoints.value.filter(e => e.Team?.TeamName === teamName.value)
+)
+
+const teamSeasons = computed(() => {
+  const seasonMap = new Map()
+  teamEntries.value.forEach(entry => {
+    const season = entry.Seasons?.Season
+    const seasonId = entry.Seasons?.id
+    if (!season) return
+    if (!seasonMap.has(season)) {
+      seasonMap.set(season, { season, seasonId, points: 0, wins: 0, podiums: 0, poles: 0, drivers: [] })
+    }
+    const s = seasonMap.get(season)
+    s.points += entry.Points || 0
+    s.wins += entry.Wins || 0
+    s.podiums += entry.Podiums || 0
+    s.poles += entry.Poles || 0
+    if (entry.Racer?.Name) {
+      s.drivers.push({ name: entry.Racer.Name, id: entry.Racer.id, points: entry.Points || 0 })
+    }
+  })
+  return Array.from(seasonMap.values())
+    .map(s => ({ ...s, drivers: s.drivers.sort((a, b) => b.points - a.points) }))
+    .sort((a, b) => b.season - a.season)
+})
+
+const teamStandingsMap = computed(() => {
+  const bySeasonMap = new Map()
+  allPoints.value.forEach(entry => {
+    const season = entry.Seasons?.Season
+    const team = entry.Team?.TeamName
+    if (!season || !team) return
+    if (!bySeasonMap.has(season)) bySeasonMap.set(season, new Map())
+    const tm = bySeasonMap.get(season)
+    if (!tm.has(team)) tm.set(team, { points: 0, wins: 0 })
+    tm.get(team).points += entry.Points || 0
+    tm.get(team).wins += entry.Wins || 0
+  })
+  const posMap = new Map()
+  bySeasonMap.forEach((tm, season) => {
+    Array.from(tm.entries())
+      .sort(([, a], [, b]) => b.points - a.points || b.wins - a.wins)
+      .forEach(([team], i) => posMap.set(`${season}-${team}`, i + 1))
+  })
+  return posMap
+})
+
+const allDriverChampionMap = computed(() => {
+  const map = new Map()
+  allPoints.value.forEach(entry => {
+    const season = entry.Seasons?.Season
+    const racerId = entry.Racer?.id
+    const points = entry.Points || 0
+    if (!season || !racerId) return
+    if (!map.has(season) || points > map.get(season).points)
+      map.set(season, { racerId, name: entry.Racer.Name, points })
+  })
+  return map
+})
+
+const seasonRows = computed(() =>
+  teamSeasons.value.map(s => ({
+    ...s,
+    position: teamStandingsMap.value.get(`${s.season}-${teamName.value}`),
+    drivers: s.drivers.map(d => ({
+      ...d,
+      driverChampion: allDriverChampionMap.value.get(s.season)?.racerId === d.id
+    }))
+  }))
+)
+
+const careerTotals = computed(() => {
+  const totals = { wins: 0, podiums: 0, poles: 0, points: 0, championships: 0, championshipSeasons: [], driverChampionships: 0, driverChampionshipSeasons: [] }
+  seasonRows.value.forEach(s => {
+    totals.wins += s.wins
+    totals.podiums += s.podiums
+    totals.poles += s.poles
+    totals.points += s.points
+    if (s.position === 1) {
+      totals.championships++
+      totals.championshipSeasons.push(s.season)
+    }
+    const champ = allDriverChampionMap.value.get(s.season)
+    if (champ && s.drivers.some(d => d.id === champ.racerId)) {
+      totals.driverChampionships++
+      totals.driverChampionshipSeasons.push(s.season)
+    }
+  })
+  return totals
+})
+
+const topSeasons = computed(() =>
+  [...seasonRows.value]
     .sort((a, b) => {
       const k = seasonSortKey.value
       let r = b[k] - a[k]
@@ -43,7 +133,7 @@ const topSeasons = computed(() => {
       return 0
     })
     .slice(0, 5)
-})
+)
 
 const topTracks = computed(() => {
   const trackMap = new Map()
@@ -52,69 +142,44 @@ const topTracks = computed(() => {
     if (hasVariation) trackMap.get(name).hasVariation = true
     return trackMap.get(name)
   }
-
   raceWins.value.forEach(r => {
     const { name, hasVariation } = processTrackName(r.Track)
     const e = ensure(name, hasVariation)
     e.wins++
     e.podiums++
   })
-
   ;[...raceP2.value, ...raceP3.value].forEach(r => {
     const { name, hasVariation } = processTrackName(r.Track)
     ensure(name, hasVariation).podiums++
   })
-
   racePoles.value.forEach(r => {
     const { name, hasVariation } = processTrackName(r.Track)
     ensure(name, hasVariation).poles++
   })
-
   return Array.from(trackMap.values())
     .sort((a, b) => b[trackSortKey.value] - a[trackSortKey.value])
     .slice(0, 5)
 })
 
-// 1. Update the sort key options (around line 77)
-const teamSortKey = ref('wins') // 'wins', 'podiums', 'points', 'seasons', 'poles'
-
-// 2. Update topTeams logic (around line 79)
-const topTeams = computed(() => {
-  const teamMap = new Map()
-
-  allPoints.value
-    .filter(e => e.Racer?.Name === driverName.value)
-    .forEach(entry => {
-      const teamName = entry.Team?.TeamName || 'Privateer / Unknown'
-      const season = entry.Seasons?.Season
-      
-      if (!teamMap.has(teamName)) {
-        // Added 'seasons' as a Set to track unique seasons, and 'poles'
-        teamMap.set(teamName, { 
-          name: teamName, 
-          wins: 0, 
-          podiums: 0, 
-          points: 0, 
-          poles: 0,
-          seasonsSet: new Set() 
-        })
-      }
-      
-      const team = teamMap.get(teamName)
-      team.wins += entry.Wins || 0
-      team.podiums += entry.Podiums || 0
-      team.points += entry.Points || 0
-      team.poles += entry.Poles || 0
-      if (season) team.seasonsSet.add(season)
-    })
-
-  return Array.from(teamMap.values())
-    .map(team => ({
-      ...team,
-      seasons: team.seasonsSet.size
-    }))
+const topDrivers = computed(() => {
+  const driverMap = new Map()
+  teamEntries.value.forEach(entry => {
+    const name = entry.Racer?.Name || 'Unknown'
+    const season = entry.Seasons?.Season
+    if (!driverMap.has(name)) {
+      driverMap.set(name, { name, wins: 0, podiums: 0, points: 0, poles: 0, seasonsSet: new Set() })
+    }
+    const d = driverMap.get(name)
+    d.wins += entry.Wins || 0
+    d.podiums += entry.Podiums || 0
+    d.points += entry.Points || 0
+    d.poles += entry.Poles || 0
+    if (season) d.seasonsSet.add(season)
+  })
+  return Array.from(driverMap.values())
+    .map(d => ({ ...d, seasons: d.seasonsSet.size }))
     .sort((a, b) => {
-      const k = teamSortKey.value
+      const k = driverSortKey.value
       let r = b[k] - a[k]
       if (r !== 0) return r
       if (k === 'wins')    { r = b.podiums - a.podiums; if (r !== 0) return r; return b.points - a.points }
@@ -129,22 +194,14 @@ const topTeams = computed(() => {
 
 const winningStreaks = computed(() => {
   if (!raceWins.value.length) return []
-
-  // Create a sorted list of all races (Wins and non-wins) 
-  // Note: For a true streak, you'd need the full 'RaceResults' table. 
-  // With current data, we can find "Consecutive Rounds" where a win occurred.
   const streaks = []
   let currentStreak = []
-
-  // raceWins is already sorted by Season then Round from fetchData
   raceWins.value.forEach((win, index) => {
     if (index === 0) {
       currentStreak.push(win)
     } else {
       const prevWin = raceWins.value[index - 1]
-      // Check if this win is the literal next round in the same season
-      const isNextRound = (win.SeasonID === prevWin.SeasonID && win.Round === prevWin.Round + 1)
-      
+      const isNextRound = win.SeasonID === prevWin.SeasonID && win.Round === prevWin.Round + 1
       if (isNextRound) {
         currentStreak.push(win)
       } else {
@@ -154,19 +211,15 @@ const winningStreaks = computed(() => {
     }
   })
   if (currentStreak.length > 1) streaks.push(currentStreak)
-
-  // Sort by length, then by most recent
   return streaks
     .sort((a, b) => b.length - a.length)
     .slice(0, 3)
     .map(streak => ({
       count: streak.length,
       start: streak[0].Seasons?.Season,
-      end: streak[streak.length - 1].Seasons?.Season,
       span: streak[0].GrandPrix + ' to ' + streak[streak.length - 1].GrandPrix
     }))
 })
-
 
 async function fetchData() {
   loading.value = true
@@ -174,11 +227,7 @@ async function fetchData() {
     const { data: pointsData, error: pointsError } = await supabase
       .from('Points')
       .select(`
-        id,
-        Points,
-        Poles,
-        Wins,
-        Podiums,
+        id, Points, Poles, Wins, Podiums,
         Racer (id, Name),
         Seasons (id, Season),
         Team (id, TeamName)
@@ -187,39 +236,62 @@ async function fetchData() {
     if (pointsError) throw pointsError
     allPoints.value = pointsData || []
 
-    const racerEntry = allPoints.value.find(e => e.Racer?.Name === driverName.value)
-    if (!racerEntry) return
+    const teamEntry = allPoints.value.find(e => e.Team?.TeamName === teamName.value)
+    if (!teamEntry) return
 
-    const racerId = racerEntry.Racer.id
+    const tId = teamEntry.Team.id
 
-    const [winsResult, polesResult, p2Result, p3Result] = await Promise.all([
+    const driverIds = [...new Set(
+      allPoints.value
+        .filter(e => e.Team?.id === tId)
+        .map(e => e.Racer?.id)
+        .filter(Boolean)
+    )]
+
+    const teamDriverSeasonSet = new Set(
+      allPoints.value
+        .filter(e => e.Team?.id === tId)
+        .map(e => `${e.Racer?.id}-${e.Seasons?.id}`)
+    )
+
+    const queries = [
       supabase.from('RaceResults')
         .select('Round, Track, GrandPrix, SeasonID, Seasons(Season)')
-        .eq('WinnerID', racerId)
+        .eq('WinnerTeamID', tId)
         .order('SeasonID', { ascending: true })
         .order('Round', { ascending: true }),
       supabase.from('RaceResults')
         .select('Round, Track, GrandPrix, SeasonID, Seasons(Season)')
-        .eq('PolesitterID', racerId)
+        .eq('PolesitterTeamID', tId)
         .order('SeasonID', { ascending: true })
         .order('Round', { ascending: true }),
-      supabase.from('RaceResults')
-        .select('Track')
-        .eq('P2ID', racerId),
-      supabase.from('RaceResults')
-        .select('Track')
-        .eq('P3ID', racerId)
-    ])
+    ]
+
+    if (driverIds.length > 0) {
+      queries.push(
+        supabase.from('RaceResults').select('Track, SeasonID, P2ID').in('P2ID', driverIds),
+        supabase.from('RaceResults').select('Track, SeasonID, P3ID').in('P3ID', driverIds)
+      )
+    }
+
+    const [winsResult, polesResult, p2Result, p3Result] = await Promise.all(queries)
 
     if (winsResult.error) throw winsResult.error
     if (polesResult.error) throw polesResult.error
-    if (p2Result.error) throw p2Result.error
-    if (p3Result.error) throw p3Result.error
 
     raceWins.value = winsResult.data || []
     racePoles.value = polesResult.data || []
-    raceP2.value = p2Result.data || []
-    raceP3.value = p3Result.data || []
+
+    if (p2Result && !p2Result.error) {
+      raceP2.value = (p2Result.data || []).filter(r =>
+        teamDriverSeasonSet.has(`${r.P2ID}-${r.SeasonID}`)
+      )
+    }
+    if (p3Result && !p3Result.error) {
+      raceP3.value = (p3Result.data || []).filter(r =>
+        teamDriverSeasonSet.has(`${r.P3ID}-${r.SeasonID}`)
+      )
+    }
   } catch (e) {
     console.error('Error fetching data:', e)
   } finally {
@@ -258,85 +330,12 @@ const teamColors = {
   'BWT':             { bg: '#e4006d', text: '#1e3fff' },
 }
 
-function getTeamStyle(teamName) {
-  const c = teamColors[teamName]
-  return c
-    ? { backgroundColor: c.bg, color: c.text }
-    : { backgroundColor: '#4b5563', color: '#ffffff' }
+function getTeamStyle(name) {
+  const c = teamColors[name]
+  return c ? { backgroundColor: c.bg, color: c.text } : { backgroundColor: '#4b5563', color: '#ffffff' }
 }
 
-const seasonWinnerMap = computed(() => {
-  const map = new Map()
-  allPoints.value.forEach(entry => {
-    const season = entry.Seasons?.Season
-    const racerId = entry.Racer?.id
-    const points = entry.Points || 0
-    if (!season || !racerId) return
-    if (!map.has(season) || points > map.get(season).points) {
-      map.set(season, { racerId, points })
-    }
-  })
-  return map
-})
-
-const driverSeasons = computed(() =>
-  allPoints.value
-    .filter(e => e.Racer?.Name === driverName.value)
-    .sort((a, b) => (b.Seasons?.Season || 0) - (a.Seasons?.Season || 0))
-)
-
-const careerTotals = computed(() => {
-  const totals = { wins: 0, podiums: 0, poles: 0, points: 0, championships: 0, championshipSeasons: [] }
-  driverSeasons.value.forEach(entry => {
-    totals.wins += entry.Wins || 0
-    totals.podiums += entry.Podiums || 0
-    totals.poles += entry.Poles || 0
-    totals.points += entry.Points || 0
-    const season = entry.Seasons?.Season
-    const racerId = entry.Racer?.id
-    if (season && racerId && seasonWinnerMap.value.get(season)?.racerId === racerId) {
-      totals.championships += 1
-      totals.championshipSeasons.push(season)
-    }
-  })
-  return totals
-})
-
-const seasonStandingsMap = computed(() => {
-  const bySeasonMap = new Map()
-  allPoints.value.forEach(entry => {
-    const season = entry.Seasons?.Season
-    const racerId = entry.Racer?.id
-    if (!season || !racerId) return
-    if (!bySeasonMap.has(season)) bySeasonMap.set(season, [])
-    bySeasonMap.get(season).push({ racerId, points: entry.Points || 0, wins: entry.Wins || 0 })
-  })
-  const posMap = new Map()
-  bySeasonMap.forEach((entries, season) => {
-    entries.sort((a, b) => b.points - a.points || b.wins - a.wins)
-    entries.forEach((e, i) => posMap.set(`${season}-${e.racerId}`, i + 1))
-  })
-  return posMap
-})
-
-const seasonRows = computed(() =>
-  driverSeasons.value.map(entry => {
-    const season = entry.Seasons?.Season
-    const racerId = entry.Racer?.id
-    return {
-      season,
-      points: entry.Points || 0,
-      wins: entry.Wins || 0,
-      podiums: entry.Podiums || 0,
-      poles: entry.Poles || 0,
-      team: entry.Team?.TeamName || '—',
-      champion: seasonWinnerMap.value.get(season)?.racerId === racerId,
-      position: seasonStandingsMap.value.get(`${season}-${racerId}`)
-    }
-  })
-)
-
-const notFound = computed(() => !loading.value && driverSeasons.value.length === 0 && allPoints.value.length > 0)
+const notFound = computed(() => !loading.value && teamEntries.value.length === 0 && allPoints.value.length > 0)
 
 onMounted(fetchData)
 </script>
@@ -348,17 +347,19 @@ onMounted(fetchData)
     <div class="container mx-auto px-4 py-8">
 
       <div class="mb-4">
-        <NuxtLink to="/drivers" class="text-blue-600 hover:text-blue-800 text-sm">← Back to Driver Profiles</NuxtLink>
+        <NuxtLink to="/teamprofile" class="text-blue-600 hover:text-blue-800 text-sm">← Back to Teams</NuxtLink>
       </div>
 
       <p v-if="loading" class="text-gray-600">Loading...</p>
-      <p v-else-if="notFound" class="text-gray-600">Driver "{{ driverName }}" not found.</p>
+      <p v-else-if="notFound" class="text-gray-600">Team "{{ teamName }}" not found.</p>
 
-      <div v-else-if="driverSeasons.length > 0">
+      <div v-else-if="teamSeasons.length > 0">
         <!-- Header card -->
         <div class="bg-slate-800 rounded-lg p-6 mb-6 shadow-lg">
-          <h2 class="text-3xl font-bold text-white mb-4">{{ driverName }}</h2>
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <h2 class="text-3xl font-bold text-white mb-4">
+            <span class="px-3 py-1 rounded text-2xl font-bold" :style="getTeamStyle(teamName)">{{ teamName }}</span>
+          </h2>
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
             <div class="text-center">
               <div class="text-3xl font-bold text-white">{{ careerTotals.wins }}</div>
               <div class="text-xs text-gray-400 uppercase mt-1">Wins</div>
@@ -379,24 +380,39 @@ onMounted(fetchData)
               <div class="text-3xl font-bold" :class="careerTotals.championships > 0 ? 'text-yellow-400' : 'text-white'">
                 {{ careerTotals.championships }}
               </div>
-              <div class="text-xs text-gray-400 uppercase mt-1">Championships</div>
+              <div class="text-xs text-gray-400 uppercase mt-1">Team Titles</div>
+            </div>
+            <div class="text-center">
+              <div class="text-3xl font-bold" :class="careerTotals.driverChampionships > 0 ? 'text-yellow-400' : 'text-white'">
+                {{ careerTotals.driverChampionships }}
+              </div>
+              <div class="text-xs text-gray-400 uppercase mt-1">Driver Titles</div>
+            </div>
+            <div class="text-center">
+              <div class="text-3xl font-bold" :class="(careerTotals.championships + careerTotals.driverChampionships) > 0 ? 'text-yellow-400' : 'text-white'">
+                {{ careerTotals.championships + careerTotals.driverChampionships }}
+              </div>
+              <div class="text-xs text-gray-400 uppercase mt-1">Total Titles</div>
             </div>
           </div>
           <div v-if="careerTotals.championshipSeasons.length > 0" class="mt-4 text-yellow-400 text-sm">
-            🏆 {{ careerTotals.championshipSeasons.sort().join(', ') }}
+            🏆 Team: {{ careerTotals.championshipSeasons.sort().join(', ') }}
+          </div>
+          <div v-if="careerTotals.driverChampionshipSeasons.length > 0" class="mt-1 text-yellow-400 text-sm">
+            🏆 Driver: {{ careerTotals.driverChampionshipSeasons.sort().join(', ') }}
           </div>
         </div>
 
         <!-- Per-season table -->
         <div class="flex flex-col lg:flex-row gap-10 mb-8 items-start">
-          
+
           <div class="flex-none">
             <div class="overflow-x-auto">
-              <table class="mr-auto bg-slate-800 rounded-lg overflow-hidden shadow-lg transition-all">
+              <table class="mr-auto bg-slate-800 rounded-lg overflow-hidden shadow-lg">
                 <thead class="bg-slate-700">
                   <tr>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Season</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Team</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Drivers</th>
                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase">Points</th>
                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase">Wins</th>
                     <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase">Podiums</th>
@@ -408,14 +424,24 @@ onMounted(fetchData)
                   <tr v-for="row in seasonRows" :key="row.season">
                     <td class="px-4 py-3 text-sm text-white font-medium">Season {{ row.season }}</td>
                     <td class="px-4 py-3">
-                      <span class="px-2 py-0.5 rounded text-[10px] font-semibold" :style="getTeamStyle(row.team)">{{ row.team }}</span>
+                      <div class="flex flex-col gap-0.5">
+                        <NuxtLink
+                          v-for="driver in row.drivers"
+                          :key="driver.name"
+                          :to="`/drivers/${encodeURIComponent(driver.name)}`"
+                          class="text-xs text-gray-300 hover:text-white transition-colors inline-flex items-center gap-1"
+                        >
+                          {{ driver.name }}
+                          <span v-if="driver.driverChampion" class="text-yellow-400">🏆</span>
+                        </NuxtLink>
+                      </div>
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-300 text-center">{{ row.points }}</td>
                     <td class="px-4 py-3 text-sm text-gray-300 text-center font-semibold">{{ row.wins }}</td>
                     <td class="px-4 py-3 text-sm text-gray-300 text-center">{{ row.podiums }}</td>
                     <td class="px-4 py-3 text-sm text-gray-300 text-center">{{ row.poles }}</td>
                     <td class="px-4 py-3 text-sm text-center">
-                      <span v-if="row.champion" class="text-yellow-400">🏆</span>
+                      <span v-if="row.position === 1" class="text-yellow-400">🏆</span>
                       <span v-else class="text-gray-500 font-mono text-xs">P{{ row.position }}</span>
                     </td>
                   </tr>
@@ -431,8 +457,8 @@ onMounted(fetchData)
     <div class="bg-slate-700 px-4 py-3 flex items-center justify-between border-b border-slate-600">
       <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Top 5 Seasons</h3>
       <div class="flex gap-1">
-        <button 
-          v-for="key in [ 'wins', 'podiums', 'poles', 'points']" 
+        <button
+          v-for="key in ['wins', 'podiums', 'poles', 'points']"
           :key="key"
           @click="seasonSortKey = key"
           :class="seasonSortKey === key ? 'bg-blue-600 text-white' : 'bg-slate-600 text-gray-300 hover:bg-slate-500'"
@@ -442,45 +468,36 @@ onMounted(fetchData)
         </button>
       </div>
     </div>
-    
-    <div class="p-4 space-y-4">
-      <<div v-for="(s, index) in topSeasons" :key="s.season" class="flex items-center justify-between border-b border-slate-700 pb-3 last:border-0 last:pb-0">
-  <div class="flex items-center gap-3">
-    <span class="text-slate-500 font-mono font-bold text-sm">#{{ index + 1 }}</span>
-    <div class="flex items-center gap-2">
-      <span class="text-white font-medium">Season {{ s.season }}</span>
-      <span v-if="s.champion" class="text-yellow-400 text-xs" title="Champion">🏆</span>
-      <span v-else class="text-gray-500 font-mono text-xs">P{{ s.position }}</span>
-    </div>
-  </div>
 
-  <div class="flex gap-11 text-[11px]">
-    <div class="flex flex-col items-center">
-      <span :class="seasonSortKey === 'wins' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">
-        {{ s.wins }}
-      </span>
-      <span class="text-[8px] text-gray-500 uppercase tracking-tighter">W</span>
-    </div>
-    <div class="flex flex-col items-center">
-      <span :class="seasonSortKey === 'podiums' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">
-        {{ s.podiums }}
-      </span>
-      <span class="text-[8px] text-gray-500 uppercase tracking-tighter">Pod</span>
-    </div>
-    <div class="flex flex-col items-center">
-      <span :class="seasonSortKey === 'poles' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">
-        {{ s.poles }}
-      </span>
-      <span class="text-[8px] text-gray-500 uppercase tracking-tighter">Pol</span>
-    </div>
-    <div class="flex flex-col items-center min-w-[24px]">
-      <span :class="seasonSortKey === 'points' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">
-        {{ s.points }}
-      </span>
-      <span class="text-[8px] text-gray-500 uppercase tracking-tighter">Pts</span>
-    </div>
-  </div>
-</div>
+    <div class="p-4 space-y-4">
+      <div v-for="(s, index) in topSeasons" :key="s.season" class="flex items-center justify-between border-b border-slate-700 pb-3 last:border-0 last:pb-0">
+        <div class="flex items-center gap-3">
+          <span class="text-slate-500 font-mono font-bold text-sm">#{{ index + 1 }}</span>
+          <div class="flex items-center gap-2">
+            <span class="text-white font-medium">Season {{ s.season }}</span>
+            <span v-if="s.position === 1" class="text-yellow-400 text-xs" title="Champions">🏆</span>
+            <span v-else class="text-gray-500 font-mono text-xs">P{{ s.position }}</span>
+          </div>
+        </div>
+        <div class="flex gap-11 text-[11px]">
+          <div class="flex flex-col items-center">
+            <span :class="seasonSortKey === 'wins' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ s.wins }}</span>
+            <span class="text-[8px] text-gray-500 uppercase tracking-tighter">W</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <span :class="seasonSortKey === 'podiums' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ s.podiums }}</span>
+            <span class="text-[8px] text-gray-500 uppercase tracking-tighter">Pod</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <span :class="seasonSortKey === 'poles' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ s.poles }}</span>
+            <span class="text-[8px] text-gray-500 uppercase tracking-tighter">Pol</span>
+          </div>
+          <div class="flex flex-col items-center min-w-[24px]">
+            <span :class="seasonSortKey === 'points' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ s.points }}</span>
+            <span class="text-[8px] text-gray-500 uppercase tracking-tighter">Pts</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -488,7 +505,7 @@ onMounted(fetchData)
     <div class="bg-slate-700 px-4 py-3 flex items-center justify-between border-b border-slate-600">
       <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Top 5 Tracks</h3>
       <div class="flex gap-1">
-        <button 
+        <button
           v-for="key in ['wins', 'podiums', 'poles']"
           :key="key"
           @click="trackSortKey = key"
@@ -528,19 +545,19 @@ onMounted(fetchData)
       </p>
     </div>
   </div>
-  </div>
-  
+</div>
+
   <div class="flex flex-col xl:flex-row gap-6 items-start">
-  
+
   <div class="flex-1 min-w-[320px] bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700">
     <div class="bg-slate-700 px-4 py-3 flex items-center justify-between border-b border-slate-600">
-      <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Top Teams</h3>
+      <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Top Drivers</h3>
       <div class="flex gap-1">
-        <button 
-          v-for="key in ['seasons', 'wins', 'podiums', 'poles', 'points']" 
+        <button
+          v-for="key in ['seasons', 'wins', 'podiums', 'poles', 'points']"
           :key="key"
-          @click="teamSortKey = key"
-          :class="teamSortKey === key ? 'bg-blue-600 text-white' : 'bg-slate-600 text-gray-300 hover:bg-slate-500'"
+          @click="driverSortKey = key"
+          :class="driverSortKey === key ? 'bg-blue-600 text-white' : 'bg-slate-600 text-gray-300 hover:bg-slate-500'"
           class="px-2 py-0.5 rounded text-[9px] font-bold uppercase transition-colors whitespace-nowrap"
         >
           {{ key }}
@@ -548,31 +565,35 @@ onMounted(fetchData)
       </div>
     </div>
     <div class="p-4 space-y-4">
-      <div v-for="(team, index) in topTeams" :key="team.name" class="flex items-center justify-between">
+      <div v-for="(driver, index) in topDrivers" :key="driver.name" class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <span class="text-slate-500 font-mono font-bold text-sm">#{{ index + 1 }}</span>
-          <span class="px-2 py-0.5 rounded text-[10px] font-semibold" :style="getTeamStyle(team.name)">{{ team.name }}</span>
+          <NuxtLink
+            :to="`/drivers/${encodeURIComponent(driver.name)}`"
+            class="text-white font-medium text-sm hover:text-blue-400 transition-colors"
+          >
+            {{ driver.name }}
+          </NuxtLink>
         </div>
-        
         <div class="flex gap-11 text-[11px] flex-shrink-0">
           <div class="flex flex-col items-center">
-            <span :class="teamSortKey === 'seasons' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ team.seasons }}</span>
+            <span :class="driverSortKey === 'seasons' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ driver.seasons }}</span>
             <span class="text-[8px] text-gray-500 uppercase tracking-tighter">Sea</span>
           </div>
           <div class="flex flex-col items-center">
-            <span :class="teamSortKey === 'wins' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ team.wins }}</span>
+            <span :class="driverSortKey === 'wins' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ driver.wins }}</span>
             <span class="text-[8px] text-gray-500 uppercase tracking-tighter">W</span>
           </div>
           <div class="flex flex-col items-center">
-            <span :class="teamSortKey === 'podiums' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ team.podiums }}</span>
+            <span :class="driverSortKey === 'podiums' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ driver.podiums }}</span>
             <span class="text-[8px] text-gray-500 uppercase tracking-tighter">Pod</span>
           </div>
           <div class="flex flex-col items-center">
-            <span :class="teamSortKey === 'poles' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ team.poles }}</span>
+            <span :class="driverSortKey === 'poles' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ driver.poles }}</span>
             <span class="text-[8px] text-gray-500 uppercase tracking-tighter">Pol</span>
           </div>
           <div class="flex flex-col items-center min-w-[24px]">
-            <span :class="teamSortKey === 'points' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ team.points }}</span>
+            <span :class="driverSortKey === 'points' ? 'text-yellow-400 font-bold scale-150' : 'text-gray-400'" class="transition-all">{{ driver.points }}</span>
             <span class="text-[8px] text-gray-500 uppercase tracking-tighter">Pts</span>
           </div>
         </div>
@@ -605,7 +626,6 @@ onMounted(fetchData)
 </div>
 
         </div>
-
 
         <!-- Race wins and poles -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

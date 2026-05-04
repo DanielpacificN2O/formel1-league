@@ -110,8 +110,7 @@ onMounted(fetchData)
           class="bg-slate-800 rounded-lg p-5 shadow-lg hover:bg-slate-700 transition-colors"
         >
           <div class="mb-3">
-            <h3 class="text-xl font-bold text-white">{{ driver.name }}</h3>
-            <p class="text-xs text-gray-400 mt-0.5">{{ driver.seasonsRaced }} season{{ driver.seasonsRaced !== 1 ? 's' : '' }}</p>
+            <h3 class="text-xl text-left font-bold text-white">{{ driver.name }}</h3>
           </div>
 
           <div class="grid grid-cols-3 gap-2 mb-3">

@@ -27,7 +27,7 @@ const toggleMobileMenu = () => {
             Standings
           </NuxtLink>
           <NuxtLink 
-            to="/teams" 
+            to="/teamprofile" 
             class="text-gray-300 hover:text-white transition-colors"
             active-class="text-white font-semibold"
           >
@@ -46,6 +46,13 @@ const toggleMobileMenu = () => {
             active-class="text-white font-semibold"
           >
             Driver Profiles
+          </NuxtLink>
+          <NuxtLink
+            to="/teamprofile"
+            class="text-gray-300 hover:text-white transition-colors"
+            active-class="text-white font-semibold"
+          >
+            Team Profiles
           </NuxtLink>
           <NuxtLink
             to="/alltimeteams"
@@ -130,6 +137,14 @@ const toggleMobileMenu = () => {
           @click="mobileMenuOpen = false"
         >
           Driver Profiles
+        </NuxtLink>
+        <NuxtLink
+          to="/teamprofile"
+          class="block py-2 text-gray-300 hover:text-white transition-colors"
+          active-class="text-white font-semibold"
+          @click="mobileMenuOpen = false"
+        >
+          Team Profiles
         </NuxtLink>
         <NuxtLink
           to="/all-time"
