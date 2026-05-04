@@ -15,6 +15,7 @@ const raceWins = ref([])
 const racePoles = ref([])
 const raceP2 = ref([])
 const raceP3 = ref([])
+const allRaceRounds = ref([])
 const loading = ref(false)
 
 const seasonSortKey = ref('wins')
@@ -475,8 +476,9 @@ onMounted(fetchData)
           <span class="text-slate-500 font-mono font-bold text-sm">#{{ index + 1 }}</span>
           <div class="flex items-center gap-2">
             <span class="text-white font-medium">Season {{ s.season }}</span>
-            <span v-if="s.position === 1" class="text-yellow-400 text-xs" title="Champions">🏆</span>
+            <span v-if="s.position === 1" class="text-yellow-400 text-xs" title="Team Champions">🏆</span>
             <span v-else class="text-gray-500 font-mono text-xs">P{{ s.position }}</span>
+            <span v-if="s.drivers.some(d => d.driverChampion)" class="text-yellow-400 text-[10px]" title="Driver Champion">🏆</span>
           </div>
         </div>
         <div class="flex gap-11 text-[11px]">

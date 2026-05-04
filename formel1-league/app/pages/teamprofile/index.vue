@@ -21,6 +21,7 @@ async function fetchData() {
         Poles,
         Wins,
         Podiums,
+        Racer (id),
         Team (id, TeamName),
         Seasons (id, Season)
       `)
@@ -47,12 +48,24 @@ const teamCards = computed(() => {
     tm.get(teamId).wins += entry.Wins || 0
   })
 
-  // Map season → champion team ID
+  // Map season → champion team ID (constructors')
   const seasonChampionMap = new Map()
   seasonTeamMap.forEach((tm, season) => {
     const [championId] = Array.from(tm.entries())
       .sort(([, a], [, b]) => b.points - a.points || b.wins - a.wins)[0]
     seasonChampionMap.set(season, championId)
+  })
+
+  // Map season → {racerId, teamId} for drivers' champion
+  const seasonDriverChampionMap = new Map()
+  allPoints.value.forEach(entry => {
+    const season = entry.Seasons?.Season
+    const racerId = entry.Racer?.id
+    const teamId = entry.Team?.id
+    const points = entry.Points || 0
+    if (!season || !racerId || !teamId) return
+    if (!seasonDriverChampionMap.has(season) || points > seasonDriverChampionMap.get(season).points)
+      seasonDriverChampionMap.set(season, { racerId, teamId, points })
   })
 
   // Aggregate per-team career stats
@@ -72,8 +85,8 @@ const teamCards = computed(() => {
         totalPoles: 0,
         totalPoints: 0,
         totalChampionships: 0,
-        championshipSeasons: [],
-        seasonsSet: new Set()
+        totalDriverChampionships: 0,
+        seasonsSeen: new Set()
       })
     }
 
@@ -83,14 +96,12 @@ const teamCards = computed(() => {
     stats.totalPoles += entry.Poles || 0
     stats.totalPoints += entry.Points || 0
 
-    if (season) {
-      stats.seasonsSet.add(season)
-      if (seasonChampionMap.get(season) === teamId) {
-        if (!stats.championshipSeasons.includes(season)) {
-          stats.totalChampionships += 1
-          stats.championshipSeasons.push(season)
-        }
-      }
+    if (season && !stats.seasonsSeen.has(season)) {
+      stats.seasonsSeen.add(season)
+      if (seasonChampionMap.get(season) === teamId)
+        stats.totalChampionships += 1
+      if (seasonDriverChampionMap.get(season)?.teamId === teamId)
+        stats.totalDriverChampionships += 1
     }
   })
 
@@ -181,8 +192,11 @@ onMounted(fetchData)
             <div class="text-sm text-gray-300">
               <span class="font-semibold text-white">{{ team.totalPoints }}</span> pts
             </div>
-            <div v-if="team.totalChampionships > 0" class="flex items-center gap-1 text-yellow-400 text-sm font-semibold">
-              🏆 {{ team.totalChampionships }}
+            <div
+              v-if="team.totalChampionships + team.totalDriverChampionships > 0"
+              class="flex items-center gap-1 text-yellow-400 text-sm font-semibold"
+            >
+              &#x1F3C6;{{ team.totalChampionships + team.totalDriverChampionships }}
             </div>
           </div>
         </NuxtLink>

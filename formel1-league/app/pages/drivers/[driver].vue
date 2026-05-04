@@ -15,6 +15,7 @@ const raceWins = ref([])
 const racePoles = ref([])
 const raceP2 = ref([])
 const raceP3 = ref([])
+const allRaceRounds = ref([])
 const loading = ref(false)
 
 // Track the active sort filters
@@ -192,7 +193,7 @@ async function fetchData() {
 
     const racerId = racerEntry.Racer.id
 
-    const [winsResult, polesResult, p2Result, p3Result] = await Promise.all([
+    const [winsResult, polesResult, p2Result, p3Result, roundsResult] = await Promise.all([
       supabase.from('RaceResults')
         .select('Round, Track, GrandPrix, SeasonID, Seasons(Season)')
         .eq('WinnerID', racerId)
@@ -208,7 +209,9 @@ async function fetchData() {
         .eq('P2ID', racerId),
       supabase.from('RaceResults')
         .select('Track')
-        .eq('P3ID', racerId)
+        .eq('P3ID', racerId),
+      supabase.from('RaceResults')
+        .select('SeasonID, Round')
     ])
 
     if (winsResult.error) throw winsResult.error
@@ -220,6 +223,7 @@ async function fetchData() {
     racePoles.value = polesResult.data || []
     raceP2.value = p2Result.data || []
     raceP3.value = p3Result.data || []
+    allRaceRounds.value = roundsResult.data || []
   } catch (e) {
     console.error('Error fetching data:', e)
   } finally {
