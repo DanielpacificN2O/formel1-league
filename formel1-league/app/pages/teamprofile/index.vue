@@ -155,7 +155,7 @@ onMounted(fetchData)
     <div class="container mx-auto px-4 py-8">
       <div class="mb-6">
         <h2 class="text-3xl font-bold text-slate-800">Team Profiles</h2>
-        <p class="text-gray-600 mt-2">Career statistics for every constructor</p>
+        <p class="text-gray-600 mt-2">Statistics for every team in NRS history, current and former</p>
       </div>
 
       <p v-if="loading" class="text-gray-600">Loading...</p>
