@@ -193,39 +193,37 @@ const topDrivers = computed(() => {
     .slice(0, 5)
 })
 
-const winningStreaks = computed(() => {
-  if (!raceWins.value.length) return []
-
-  // Build a global race index from all rounds so streaks cross season boundaries correctly
+function buildRaceIndex(allRounds) {
   const seen = new Set()
   const raceIndex = new Map()
-  ;[...allRaceRounds.value]
+  ;[...allRounds]
     .sort((a, b) => a.SeasonID !== b.SeasonID ? a.SeasonID - b.SeasonID : a.Round - b.Round)
     .forEach(r => {
       const key = `${r.SeasonID}-${r.Round}`
       if (!seen.has(key)) { seen.add(key); raceIndex.set(key, raceIndex.size) }
     })
+  return raceIndex
+}
 
+function calcStreaks(races, raceIndex) {
   const streaks = []
   let currentStreak = []
-
-  raceWins.value.forEach((win, index) => {
+  races.forEach((race, index) => {
     if (index === 0) {
-      currentStreak.push(win)
+      currentStreak.push(race)
     } else {
-      const prevWin = raceWins.value[index - 1]
-      const prevIdx = raceIndex.get(`${prevWin.SeasonID}-${prevWin.Round}`)
-      const currIdx = raceIndex.get(`${win.SeasonID}-${win.Round}`)
+      const prev = races[index - 1]
+      const prevIdx = raceIndex.get(`${prev.SeasonID}-${prev.Round}`)
+      const currIdx = raceIndex.get(`${race.SeasonID}-${race.Round}`)
       if (currIdx !== undefined && prevIdx !== undefined && currIdx === prevIdx + 1) {
-        currentStreak.push(win)
+        currentStreak.push(race)
       } else {
         if (currentStreak.length > 1) streaks.push(currentStreak)
-        currentStreak = [win]
+        currentStreak = [race]
       }
     }
   })
   if (currentStreak.length > 1) streaks.push(currentStreak)
-
   return streaks
     .sort((a, b) => b.length - a.length)
     .slice(0, 3)
@@ -235,6 +233,32 @@ const winningStreaks = computed(() => {
       end: streak[streak.length - 1].Seasons?.Season,
       span: streak[0].GrandPrix + ' to ' + streak[streak.length - 1].GrandPrix
     }))
+}
+
+const winningStreaks = computed(() => {
+  if (!raceWins.value.length) return []
+  return calcStreaks(raceWins.value, buildRaceIndex(allRaceRounds.value))
+})
+
+const poleStreaks = computed(() => {
+  if (!racePoles.value.length) return []
+  return calcStreaks(racePoles.value, buildRaceIndex(allRaceRounds.value))
+})
+
+const podiumStreaks = computed(() => {
+  const raceIndex = buildRaceIndex(allRaceRounds.value)
+  const seen = new Set()
+  const uniquePodiumRaces = [...raceWins.value, ...raceP2.value, ...raceP3.value]
+    .filter(r => r.SeasonID && r.Round)
+    .filter(r => {
+      const key = `${r.SeasonID}-${r.Round}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .sort((a, b) => (raceIndex.get(`${a.SeasonID}-${a.Round}`) ?? Infinity) - (raceIndex.get(`${b.SeasonID}-${b.Round}`) ?? Infinity))
+  if (!uniquePodiumRaces.length) return []
+  return calcStreaks(uniquePodiumRaces, raceIndex)
 })
 
 async function fetchData() {
@@ -287,8 +311,8 @@ async function fetchData() {
 
     if (driverIds.length > 0) {
       queries.push(
-        supabase.from('RaceResults').select('Track, SeasonID, P2ID').in('P2ID', driverIds),
-        supabase.from('RaceResults').select('Track, SeasonID, P3ID').in('P3ID', driverIds)
+        supabase.from('RaceResults').select('Round, Track, GrandPrix, SeasonID, Seasons(Season), P2ID').in('P2ID', driverIds),
+        supabase.from('RaceResults').select('Round, Track, GrandPrix, SeasonID, Seasons(Season), P3ID').in('P3ID', driverIds)
       )
     }
 
@@ -640,6 +664,56 @@ onMounted(fetchData)
       </div>
       <div v-else class="text-center py-4 text-gray-500 text-sm italic">
         No consecutive wins recorded.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="flex flex-col xl:flex-row gap-6 items-start mt-6">
+
+  <div class="flex-1 min-w-[320px] bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700">
+    <div class="bg-slate-700 px-4 py-3 border-b border-slate-600">
+      <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Best Pole Streaks</h3>
+    </div>
+    <div class="p-4 space-y-4">
+      <div v-if="poleStreaks.length > 0" v-for="(streak, index) in poleStreaks" :key="index" class="flex flex-col border-b border-slate-700 pb-3 last:border-0 last:pb-0">
+        <div class="flex justify-between items-center mb-1">
+          <div class="flex items-center gap-2">
+            <span class="text-yellow-400 font-black text-xl">{{ streak.count }}</span>
+            <span class="text-white text-xs font-bold uppercase tracking-tighter">Poles in a row</span>
+          </div>
+          <span class="text-slate-500 text-[10px] font-mono">
+            {{ streak.start === streak.end ? `Season ${streak.start}` : `Season ${streak.start} - Season ${streak.end}` }}
+          </span>
+        </div>
+        <span class="text-gray-400 text-[10px] italic leading-tight">{{ streak.span }}</span>
+      </div>
+      <div v-else class="text-center py-4 text-gray-500 text-sm italic">
+        No consecutive poles recorded.
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-1 min-w-[320px] bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700">
+    <div class="bg-slate-700 px-4 py-3 border-b border-slate-600">
+      <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Best Podium Streaks</h3>
+    </div>
+    <div class="p-4 space-y-4">
+      <div v-if="podiumStreaks.length > 0" v-for="(streak, index) in podiumStreaks" :key="index" class="flex flex-col border-b border-slate-700 pb-3 last:border-0 last:pb-0">
+        <div class="flex justify-between items-center mb-1">
+          <div class="flex items-center gap-2">
+            <span class="text-yellow-400 font-black text-xl">{{ streak.count }}</span>
+            <span class="text-white text-xs font-bold uppercase tracking-tighter">Podiums in a row</span>
+          </div>
+          <span class="text-slate-500 text-[10px] font-mono">
+            {{ streak.start === streak.end ? `Season ${streak.start}` : `Season ${streak.start} - Season ${streak.end}` }}
+          </span>
+        </div>
+        <span class="text-gray-400 text-[10px] italic leading-tight">{{ streak.span }}</span>
+      </div>
+      <div v-else class="text-center py-4 text-gray-500 text-sm italic">
+        No consecutive podiums recorded.
       </div>
     </div>
   </div>
