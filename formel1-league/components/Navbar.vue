@@ -39,20 +39,7 @@ const toggleMobileMenu = () => {
             Race Results
           </NuxtLink>
           
-          <NuxtLink
-            to="/all-time"
-            class="text-gray-300 hover:text-white transition-colors"
-            active-class="text-white font-semibold"
-          >
-            All-Time Stats
-          </NuxtLink>
-          <NuxtLink
-            to="/alltimeteams"
-            class="text-gray-300 hover:text-white transition-colors"
-            active-class="text-white font-semibold"
-          >
-            All-Time Team Stats
-          </NuxtLink>
+          
           <NuxtLink
             to="/drivers"
             class="text-gray-300 hover:text-white transition-colors"

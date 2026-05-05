@@ -131,22 +131,27 @@ const topTeams = computed(() => {
 const winningStreaks = computed(() => {
   if (!raceWins.value.length) return []
 
-  // Create a sorted list of all races (Wins and non-wins) 
-  // Note: For a true streak, you'd need the full 'RaceResults' table. 
-  // With current data, we can find "Consecutive Rounds" where a win occurred.
+  // Build a global race index from all rounds so streaks cross season boundaries correctly
+  const seen = new Set()
+  const raceIndex = new Map()
+  ;[...allRaceRounds.value]
+    .sort((a, b) => a.SeasonID !== b.SeasonID ? a.SeasonID - b.SeasonID : a.Round - b.Round)
+    .forEach((r, i) => {
+      const key = `${r.SeasonID}-${r.Round}`
+      if (!seen.has(key)) { seen.add(key); raceIndex.set(key, raceIndex.size) }
+    })
+
   const streaks = []
   let currentStreak = []
 
-  // raceWins is already sorted by Season then Round from fetchData
   raceWins.value.forEach((win, index) => {
     if (index === 0) {
       currentStreak.push(win)
     } else {
       const prevWin = raceWins.value[index - 1]
-      // Check if this win is the literal next round in the same season
-      const isNextRound = (win.SeasonID === prevWin.SeasonID && win.Round === prevWin.Round + 1)
-      
-      if (isNextRound) {
+      const prevIdx = raceIndex.get(`${prevWin.SeasonID}-${prevWin.Round}`)
+      const currIdx = raceIndex.get(`${win.SeasonID}-${win.Round}`)
+      if (currIdx !== undefined && prevIdx !== undefined && currIdx === prevIdx + 1) {
         currentStreak.push(win)
       } else {
         if (currentStreak.length > 1) streaks.push(currentStreak)
@@ -156,7 +161,6 @@ const winningStreaks = computed(() => {
   })
   if (currentStreak.length > 1) streaks.push(currentStreak)
 
-  // Sort by length, then by most recent
   return streaks
     .sort((a, b) => b.length - a.length)
     .slice(0, 3)
@@ -595,7 +599,9 @@ onMounted(fetchData)
             <span class="text-yellow-400 font-black text-xl">{{ streak.count }}</span>
             <span class="text-white text-xs font-bold uppercase tracking-tighter">Wins in a row</span>
           </div>
-          <span class="text-slate-500 text-[10px] font-mono">Season {{ streak.start }}</span>
+          <span class="text-slate-500 text-[10px] font-mono">
+            {{ streak.start === streak.end ? `Season ${streak.start}` : `Season ${streak.start} - Season ${streak.end}` }}
+          </span>
         </div>
         <span class="text-gray-400 text-[10px] italic leading-tight">{{ streak.span }}</span>
       </div>

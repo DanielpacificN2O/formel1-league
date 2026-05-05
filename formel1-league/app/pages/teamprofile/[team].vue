@@ -195,15 +195,28 @@ const topDrivers = computed(() => {
 
 const winningStreaks = computed(() => {
   if (!raceWins.value.length) return []
+
+  // Build a global race index from all rounds so streaks cross season boundaries correctly
+  const seen = new Set()
+  const raceIndex = new Map()
+  ;[...allRaceRounds.value]
+    .sort((a, b) => a.SeasonID !== b.SeasonID ? a.SeasonID - b.SeasonID : a.Round - b.Round)
+    .forEach(r => {
+      const key = `${r.SeasonID}-${r.Round}`
+      if (!seen.has(key)) { seen.add(key); raceIndex.set(key, raceIndex.size) }
+    })
+
   const streaks = []
   let currentStreak = []
+
   raceWins.value.forEach((win, index) => {
     if (index === 0) {
       currentStreak.push(win)
     } else {
       const prevWin = raceWins.value[index - 1]
-      const isNextRound = win.SeasonID === prevWin.SeasonID && win.Round === prevWin.Round + 1
-      if (isNextRound) {
+      const prevIdx = raceIndex.get(`${prevWin.SeasonID}-${prevWin.Round}`)
+      const currIdx = raceIndex.get(`${win.SeasonID}-${win.Round}`)
+      if (currIdx !== undefined && prevIdx !== undefined && currIdx === prevIdx + 1) {
         currentStreak.push(win)
       } else {
         if (currentStreak.length > 1) streaks.push(currentStreak)
@@ -212,12 +225,14 @@ const winningStreaks = computed(() => {
     }
   })
   if (currentStreak.length > 1) streaks.push(currentStreak)
+
   return streaks
     .sort((a, b) => b.length - a.length)
     .slice(0, 3)
     .map(streak => ({
       count: streak.length,
       start: streak[0].Seasons?.Season,
+      end: streak[streak.length - 1].Seasons?.Season,
       span: streak[0].GrandPrix + ' to ' + streak[streak.length - 1].GrandPrix
     }))
 })
@@ -266,6 +281,8 @@ async function fetchData() {
         .eq('PolesitterTeamID', tId)
         .order('SeasonID', { ascending: true })
         .order('Round', { ascending: true }),
+      supabase.from('RaceResults')
+        .select('SeasonID, Round'),
     ]
 
     if (driverIds.length > 0) {
@@ -275,13 +292,14 @@ async function fetchData() {
       )
     }
 
-    const [winsResult, polesResult, p2Result, p3Result] = await Promise.all(queries)
+    const [winsResult, polesResult, roundsResult, p2Result, p3Result] = await Promise.all(queries)
 
     if (winsResult.error) throw winsResult.error
     if (polesResult.error) throw polesResult.error
 
     raceWins.value = winsResult.data || []
     racePoles.value = polesResult.data || []
+    allRaceRounds.value = roundsResult.data || []
 
     if (p2Result && !p2Result.error) {
       raceP2.value = (p2Result.data || []).filter(r =>
@@ -614,7 +632,9 @@ onMounted(fetchData)
             <span class="text-yellow-400 font-black text-xl">{{ streak.count }}</span>
             <span class="text-white text-xs font-bold uppercase tracking-tighter">Wins in a row</span>
           </div>
-          <span class="text-slate-500 text-[10px] font-mono">Season {{ streak.start }}</span>
+          <span class="text-slate-500 text-[10px] font-mono">
+            {{ streak.start === streak.end ? `Season ${streak.start}` : `Season ${streak.start} - Season ${streak.end}` }}
+          </span>
         </div>
         <span class="text-gray-400 text-[10px] italic leading-tight">{{ streak.span }}</span>
       </div>

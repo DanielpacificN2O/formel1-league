@@ -9,6 +9,8 @@ const supabase = createClient(config.public.supabaseUrl, config.public.supabaseP
 
 const allPoints = ref([])
 const loading = ref(false)
+const sortBy = ref('wins')
+const currentFirst = ref(false)
 
 async function fetchData() {
   loading.value = true
@@ -106,7 +108,20 @@ const teamCards = computed(() => {
   })
 
   return Array.from(statsMap.values())
-    .sort((a, b) => b.totalWins - a.totalWins || b.totalPodiums - a.totalPodiums || b.totalPoints - a.totalPoints)
+    .map(s => ({ ...s, isCurrent: s.seasonsSeen.has('S29') }))
+})
+
+const sortedTeamCards = computed(() => {
+  return [...teamCards.value].sort((a, b) => {
+    if (currentFirst.value && a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1
+    switch (sortBy.value) {
+      case 'podiums': return b.totalPodiums - a.totalPodiums
+      case 'poles':   return b.totalPoles - a.totalPoles
+      case 'points':  return b.totalPoints - a.totalPoints
+      case 'titles':  return (b.totalChampionships + b.totalDriverChampionships) - (a.totalChampionships + a.totalDriverChampionships)
+      default:        return b.totalWins - a.totalWins || b.totalPodiums - a.totalPodiums || b.totalPoints - a.totalPoints
+    }
+  })
 })
 
 const teamColors = {
@@ -145,6 +160,30 @@ function getTeamStyle(name) {
   return c ? { backgroundColor: c.bg, color: c.text } : { backgroundColor: '#4b5563', color: '#ffffff' }
 }
 
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+function getCardStyle(name) {
+  const c = teamColors[name]
+  return c ? { backgroundColor: c.bg, color: c.text } : {}
+}
+
+function getCardBadgeStyle(name) {
+  const c = teamColors[name]
+  if (!c) return { backgroundColor: '#1e293b', color: '#ffffff' }
+  return { backgroundColor: c.text, color: c.bg }
+}
+
+function getDividerStyle(name) {
+  const c = teamColors[name]
+  return c ? { borderColor: hexToRgba(c.text, 0.3) } : {}
+}
+
 onMounted(fetchData)
 </script>
 
@@ -153,48 +192,124 @@ onMounted(fetchData)
     <Hero />
     <Navbar />
     <div class="container mx-auto px-4 py-8">
-      <div class="mb-6">
-        <h2 class="text-3xl font-bold text-slate-800">Team Profiles</h2>
-        <p class="text-gray-600 mt-2">Statistics for every team in NRS history, current and former</p>
+      <div class="flex flex-wrap items-end justify-between gap-3 mb-6">
+        <div>
+          <h2 class="text-3xl font-bold text-slate-800">Team Profiles</h2>
+          <p class="text-gray-600 mt-2">Statistics for every team in NRS history, current and former</p>
+          <NuxtLink to="/alltimeteams" class="inline-block mt-2 text-sm font-medium text-slate-600 border border-slate-300 bg-white hover:bg-slate-100 px-3 py-1.5 rounded transition-colors">All-time team stats →</NuxtLink>
+        </div>
+        <div v-if="!loading && teamCards.length > 0" class="flex flex-wrap items-center gap-2">
+        <button
+          v-for="opt in [
+            { key: 'wins', label: 'Wins' },
+            { key: 'podiums', label: 'Podiums' },
+            { key: 'poles', label: 'Poles' },
+            { key: 'points', label: 'Points' },
+            { key: 'titles', label: 'Titles' },
+          ]"
+          :key="opt.key"
+          @click="sortBy = opt.key"
+          class="px-3 py-1.5 rounded text-sm font-medium transition-colors"
+          :class="sortBy === opt.key
+            ? 'bg-slate-700 text-white'
+            : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100'"
+        >
+          {{ opt.label }}
+        </button>
+        <button
+          @click="currentFirst = !currentFirst"
+          class="px-3 py-1.5 rounded text-sm font-medium transition-colors ml-2"
+          :class="currentFirst
+            ? 'bg-emerald-600 text-white'
+            : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100'"
+        >
+          Current teams first
+        </button>
+        </div>
       </div>
 
       <p v-if="loading" class="text-gray-600">Loading...</p>
 
-      <div v-else-if="teamCards.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div v-else-if="sortedTeamCards.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <NuxtLink
-          v-for="team in teamCards"
+          v-for="team in sortedTeamCards"
           :key="team.id"
           :to="`/teamprofile/${encodeURIComponent(team.name)}`"
-          class="bg-slate-800 rounded-lg p-5 shadow-lg hover:bg-slate-700 transition-colors"
+          class="rounded-lg p-5 shadow-lg"
+          :class="team.isCurrent && teamColors[team.name]
+            ? 'transition-opacity hover:opacity-90'
+            : 'bg-slate-800 hover:bg-slate-700 transition-colors'"
+          :style="team.isCurrent ? getCardStyle(team.name) : {}"
         >
           <div class="mb-3">
-            <span class="px-2 py-0.5 rounded text-sm font-bold" :style="getTeamStyle(team.name)">
+            <span
+              class="text-sm font-bold"
+              :class="!(team.isCurrent && teamColors[team.name]) && 'px-2 py-0.5 rounded'"
+              :style="!(team.isCurrent && teamColors[team.name]) ? getTeamStyle(team.name) : {}"
+            >
               {{ team.name }}
             </span>
           </div>
 
           <div class="grid grid-cols-3 gap-2 mb-3">
             <div class="text-center">
-              <div class="text-2xl font-bold text-white">{{ team.totalWins }}</div>
-              <div class="text-xs text-gray-400 uppercase">Wins</div>
+              <div
+                class="text-2xl font-bold"
+                :class="!(team.isCurrent && teamColors[team.name]) && 'text-white'"
+              >{{ team.totalWins }}</div>
+              <div
+                class="text-xs uppercase"
+                :class="team.isCurrent && teamColors[team.name] ? 'opacity-70' : 'text-gray-400'"
+              >Wins</div>
             </div>
             <div class="text-center">
-              <div class="text-2xl font-bold text-white">{{ team.totalPodiums }}</div>
-              <div class="text-xs text-gray-400 uppercase">Podiums</div>
+              <div
+                class="text-2xl font-bold"
+                :class="!(team.isCurrent && teamColors[team.name]) && 'text-white'"
+              >{{ team.totalPodiums }}</div>
+              <div
+                class="text-xs uppercase"
+                :class="team.isCurrent && teamColors[team.name] ? 'opacity-70' : 'text-gray-400'"
+              >Podiums</div>
             </div>
             <div class="text-center">
-              <div class="text-2xl font-bold text-white">{{ team.totalPoles }}</div>
-              <div class="text-xs text-gray-400 uppercase">Poles</div>
+              <div
+                class="text-2xl font-bold"
+                :class="!(team.isCurrent && teamColors[team.name]) && 'text-white'"
+              >{{ team.totalPoles }}</div>
+              <div
+                class="text-xs uppercase"
+                :class="team.isCurrent && teamColors[team.name] ? 'opacity-70' : 'text-gray-400'"
+              >Poles</div>
             </div>
           </div>
 
-          <div class="flex justify-between items-center pt-3 border-t border-slate-700">
-            <div class="text-sm text-gray-300">
-              <span class="font-semibold text-white">{{ team.totalPoints }}</span> pts
+          <div
+            class="grid grid-cols-3 items-center pt-3 border-t"
+            :class="!(team.isCurrent && teamColors[team.name]) && 'border-slate-700'"
+            :style="team.isCurrent ? getDividerStyle(team.name) : {}"
+          >
+            <div
+              class="text-sm"
+              :class="!(team.isCurrent && teamColors[team.name]) && 'text-gray-300'"
+            >
+              <span
+                class="font-semibold"
+                :class="!(team.isCurrent && teamColors[team.name]) && 'text-white'"
+              >{{ team.totalPoints }}</span> pts
+            </div>
+            <div
+              class="text-sm text-center"
+              :class="!(team.isCurrent && teamColors[team.name]) && 'text-gray-300'"
+            >
+              <span
+                class="font-semibold"
+                :class="!(team.isCurrent && teamColors[team.name]) && 'text-white'"
+              >{{ team.seasonsSeen.size }}</span> seasons
             </div>
             <div
               v-if="team.totalChampionships + team.totalDriverChampionships > 0"
-              class="flex items-center gap-1 text-yellow-400 text-sm font-semibold"
+              class="flex items-center justify-end gap-1 text-yellow-400 text-sm font-semibold"
             >
               &#x1F3C6;{{ team.totalChampionships + team.totalDriverChampionships }}
             </div>
@@ -202,7 +317,7 @@ onMounted(fetchData)
         </NuxtLink>
       </div>
 
-      <p v-else class="text-gray-600">No data found</p>
+      <p v-else-if="!loading" class="text-gray-600">No data found</p>
     </div>
   </div>
 </template>

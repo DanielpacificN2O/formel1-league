@@ -284,6 +284,7 @@ function formatSeason(seasonCode) {
     <div class="container mx-auto px-4 py-8">
       
       <div class="mb-6">
+        <NuxtLink to="/teamprofile" class="inline-flex items-center gap-1 text-sm font-medium text-slate-600 border border-slate-300 bg-white hover:bg-slate-100 px-3 py-1.5 rounded transition-colors mb-3">← Team Profiles</NuxtLink>
         <h2 class="text-3xl font-bold text-slate-800">All-Time Team Statistics</h2>
         <p class="text-gray-600 mt-2">Career totals across all seasons</p>
       </div>
