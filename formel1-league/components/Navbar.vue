@@ -54,8 +54,15 @@ const toggleMobileMenu = () => {
           >
             Team Profiles
           </NuxtLink>
-          
-          
+          <NuxtLink
+            to="/tracks"
+            class="text-gray-300 hover:text-white transition-colors"
+            active-class="text-white font-semibold"
+          >
+            Track Profiles
+          </NuxtLink>
+
+
           <NuxtLink
             to="/Head2Head"
             class="text-gray-300 hover:text-white transition-colors"
@@ -133,6 +140,14 @@ const toggleMobileMenu = () => {
           @click="mobileMenuOpen = false"
         >
           Team Profiles
+        </NuxtLink>
+        <NuxtLink
+          to="/tracks"
+          class="block py-2 text-gray-300 hover:text-white transition-colors"
+          active-class="text-white font-semibold"
+          @click="mobileMenuOpen = false"
+        >
+          Track Profiles
         </NuxtLink>
         <NuxtLink
           to="/all-time"
