@@ -9,7 +9,7 @@ const supabase = createClient(config.public.supabaseUrl, config.public.supabaseP
 
 const allResults = ref([])
 const loading = ref(false)
-const sortBy = ref('races')
+const sortBy = ref('country')
 
 const trackAliases = {
   'Highlands': 'Highlands Circuit',
@@ -26,6 +26,82 @@ const processTrackName = (rawName) => {
     .trim()
   cleanName = trackAliases[cleanName] ?? cleanName
   return { name: cleanName, hasVariation }
+}
+
+const trackInfo = {
+  'Donington Park':           { country: 'England',        represents: 'Scotland'   },
+  'Fuji':                     { country: 'Japan',           represents: 'Fuji'       },
+  'Imola':                    { country: 'Italy',           represents: 'San Marino' },
+  'Long Beach Circuit':       { country: 'USA',             represents: 'Long Beach' },
+  'Mugello':                  { country: 'Italy',           represents: 'Tuscany'    },
+  'Navarra':                  { country: 'Spain',           represents: 'Andorra'    },
+  'Nurburgring GP':           { country: 'Germany',         represents: 'Luxembourg' },
+  'Oulton Park':              { country: 'England',         represents: 'Wales'      },
+  'Highlands Circuit':        { country: 'Scotland' },
+  'Highlands Drift':          { country: 'Scotland' },
+  'Adelaide Circuit':         { country: 'Australia'      },
+  'Albert Park Circuit':      { country: 'Australia'      },
+  'Arctic Circle Raceway':    { country: 'Norway'         },
+  'Baku Circuit':             { country: 'Azerbaijan'     },
+  'Barcelona':                { country: 'Spain'          },
+  'Buddh':                    { country: 'India'          },
+  'Circuit Monaco':           { country: 'Monaco'         },
+  'Circuit Montreal':         { country: 'Canada'         },
+  'Circuit of the Americas':  { country: 'USA'            },
+  'Daytona Road Course':      { country: 'USA'            },
+  'Detroit Circuit':          { country: 'USA'            },
+  'Estoril':                  { country: 'Portugal'       },
+  'Hockenheim':               { country: 'Germany'        },
+  'Hungaroring':              { country: 'Hungary'        },
+  'Indianapolis Road Course': { country: 'USA'            },
+  'Interlagos':               { country: 'Brazil'         },
+  'Istanbul Park':            { country: 'Turkey'         },
+  'Jeddah Circuit':           { country: 'Saudi Arabia'   },
+  'Jerez':                    { country: 'Spain'          },
+  'Korea International Circuit': { country: 'South Korea' },
+  'Kyalami':                  { country: 'South Africa'   },
+  'Laguna Seca':              { country: 'USA'            },
+  'Le Mans':                  { country: 'France'         },
+  'Losail':                   { country: 'Qatar'          },
+  'Mexico City Circuit':      { country: 'Mexico'         },
+  'Monza':                    { country: 'Italy'          },
+  'Mount Panorama Circuit':   { country: 'Australia'      },
+  'Nurburgring Nordschleife': { country: 'Germany'        },
+  'Paul Ricard':              { country: 'France'         },
+  'Portimao':                 { country: 'Portugal'       },
+  'Red Bull Ring':            { country: 'Austria'        },
+  'Road America':             { country: 'USA'            },
+  'Rudskogen':                { country: 'Norway'         },
+  'Sakhir':                   { country: 'Bahrain'        },
+  'Sentul':                   { country: 'Indonesia'      },
+  'Sepang':                   { country: 'Malaysia'       },
+  'Shanghai':                 { country: 'China'          },
+  'Silverstone':              { country: 'England' },
+  'Spa-Francorchamps':        { country: 'Belgium'        },
+  'Suzuka':                   { country: 'Japan'          },
+  'Sveg Raceway':             { country: 'Sweden'         },
+  'Watkins Glen':             { country: 'USA'            },
+  'Zandvoort':                { country: 'Netherlands'    },
+}
+
+function formatTrackCountry(name) {
+  const info = trackInfo[name]
+  if (!info) return undefined
+  return info.represents ? `${info.country} (${info.represents})` : info.country
+}
+
+const countryContinent = {
+  'Austria': 'Europe', 'Azerbaijan': 'Europe', 'Belgium': 'Europe',
+  'England': 'Europe', 'France': 'Europe', 'Germany': 'Europe',
+  'Hungary': 'Europe', 'Italy': 'Europe', 'Monaco': 'Europe',
+  'Netherlands': 'Europe', 'Norway': 'Europe', 'Portugal': 'Europe',
+  'Scotland': 'Europe', 'Spain': 'Europe', 'Sweden': 'Europe',
+  'Bahrain': 'Middle East', 'Qatar': 'Middle East', 'Saudi Arabia': 'Middle East',
+  'Australia': 'Asia-Pacific',
+  'China': 'Asia-Pacific', 'India': 'Asia-Pacific', 'Indonesia': 'Asia-Pacific',
+  'Japan': 'Asia-Pacific', 'Malaysia': 'Asia-Pacific', 'South Korea': 'Asia-Pacific', 'Turkey': 'Asia-Pacific',
+  'Brazil': 'Americas', 'Canada': 'Americas', 'Mexico': 'Americas', 'USA': 'Americas',
+  'South Africa': 'Africa',
 }
 
 async function fetchData() {
@@ -132,6 +208,34 @@ const sortedLongTracks = computed(() => {
     })
 })
 
+const tracksByContinent = computed(() => {
+  const countryMap = new Map()
+  trackCards.value.forEach(track => {
+    const country = trackInfo[track.name]?.country ?? 'Unknown'
+    const continent = countryContinent[country] ?? 'Other'
+    if (!countryMap.has(country)) {
+      countryMap.set(country, { country, continent, tracks: [], totalRaces: 0 })
+    }
+    const entry = countryMap.get(country)
+    entry.tracks.push(track)
+    entry.totalRaces += track.races
+  })
+  countryMap.forEach(e => e.tracks.sort((a, b) => b.races - a.races))
+
+  const continentMap = new Map()
+  countryMap.forEach(entry => {
+    if (!continentMap.has(entry.continent)) {
+      continentMap.set(entry.continent, { continent: entry.continent, countries: [], totalRaces: 0 })
+    }
+    const ce = continentMap.get(entry.continent)
+    ce.countries.push(entry)
+    ce.totalRaces += entry.totalRaces
+  })
+  continentMap.forEach(ce => ce.countries.sort((a, b) => b.totalRaces - a.totalRaces))
+
+  return Array.from(continentMap.values()).sort((a, b) => b.totalRaces - a.totalRaces)
+})
+
 onMounted(fetchData)
 </script>
 
@@ -147,7 +251,7 @@ onMounted(fetchData)
         </div>
         <div v-if="!loading && trackCards.length > 0" class="flex flex-wrap items-center gap-2">
           <button
-            v-for="opt in [{ key: 'races', label: 'By Races' }, { key: 'name', label: 'By Name' }]"
+            v-for="opt in [{ key: 'races', label: 'By Races' }, { key: 'name', label: 'By Name' }, { key: 'country', label: 'By Country' }]"
             :key="opt.key"
             @click="sortBy = opt.key"
             class="px-3 py-1.5 rounded text-sm font-medium transition-colors"
@@ -162,67 +266,92 @@ onMounted(fetchData)
 
       <p v-if="loading" class="text-gray-600">Loading...</p>
 
-      <template v-else-if="sortedRegularTracks.length > 0">
-        <!-- Regular tracks -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-10">
-          <NuxtLink
-            v-for="track in sortedRegularTracks"
-            :key="track.name"
-            :to="`/tracks/${encodeURIComponent(track.name)}`"
-            class="bg-slate-800 rounded-lg p-5 shadow-lg hover:bg-slate-700 transition-colors"
-          >
-            <div class="mb-3">
-              <h3 class="text-lg text-left font-bold text-white leading-tight">{{ track.name }}<span v-if="track.hasLongVariant" class="text-gray-500 font-normal text-sm"> *</span></h3>
-              <p class="text-xs text-gray-400 mt-0.5">
-                {{ track.firstSeason === track.lastSeason ? track.firstSeason : `${track.firstSeason} – ${track.lastSeason}` }}
-              </p>
-            </div>
+      <template v-else-if="trackCards.length > 0">
 
-            <div class="space-y-1.5 mb-3">
-              <div v-if="track.topWinner" class="flex items-center justify-between text-xs">
-                <span class="text-gray-500 uppercase tracking-wider">Most wins</span>
-                <span class="text-gray-200 font-medium">{{ track.topWinner.name }} <span class="text-gray-400">({{ track.topWinner.count }})</span></span>
+        <!-- By Country view -->
+        <template v-if="sortBy === 'country'">
+          <template v-for="continentGroup in tracksByContinent" :key="continentGroup.continent">
+            <div
+              v-for="(countryGroup, countryIndex) in continentGroup.countries"
+              :key="countryGroup.country"
+              class="mb-10"
+            >
+              <div class="mb-4">
+                <h2 v-if="countryIndex === 0" class="text-3xl font-bold text-slate-800 mb-1">
+                  <NuxtLink
+                    :to="`/continents/${encodeURIComponent(continentGroup.continent)}`"
+                    class="hover:text-slate-600 hover:underline transition-colors"
+                  >{{ continentGroup.continent }}</NuxtLink>
+                </h2>
+                <h3 class="text-lg font-semibold text-slate-600">
+                  <NuxtLink
+                    :to="`/countries/${encodeURIComponent(countryGroup.country)}`"
+                    class="hover:text-slate-800 hover:underline transition-colors"
+                  >{{ countryGroup.country }}</NuxtLink>
+                  <span class="text-sm font-normal text-gray-500 ml-1">{{ countryGroup.totalRaces }}</span>
+                </h3>
               </div>
-              <div v-if="track.topPoler" class="flex items-center justify-between text-xs">
-                <span class="text-gray-500 uppercase tracking-wider">Most poles</span>
-                <span class="text-gray-200 font-medium">{{ track.topPoler.name }} <span class="text-gray-400">({{ track.topPoler.count }})</span></span>
-              </div>
-              <div v-if="track.topPodium" class="flex items-center justify-between text-xs">
-                <span class="text-gray-500 uppercase tracking-wider">Most podiums</span>
-                <span class="text-gray-200 font-medium">{{ track.topPodium.name }} <span class="text-gray-400">({{ track.topPodium.count }})</span></span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <NuxtLink
+                  v-for="track in countryGroup.tracks"
+                  :key="track.name"
+                  :to="`/tracks/${encodeURIComponent(track.name)}`"
+                  class="bg-slate-800 rounded-lg p-5 shadow-lg hover:bg-slate-700 transition-colors"
+                >
+                  <div class="mb-3">
+                    <div class="flex items-start justify-between gap-2">
+                      <h3 class="text-lg font-bold text-white leading-tight">{{ track.name }}<span v-if="track.hasLongVariant" class="text-gray-500 font-normal text-sm"> *</span></h3>
+                      <span v-if="formatTrackCountry(track.name)" class="text-xs text-gray-400 flex-shrink-0 text-right mt-0.5">{{ formatTrackCountry(track.name) }}</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                      {{ track.firstSeason === track.lastSeason ? track.firstSeason : `${track.firstSeason} – ${track.lastSeason}` }}
+                    </p>
+                  </div>
+                  <div class="space-y-1.5 mb-3">
+                    <div v-if="track.topWinner" class="flex items-center justify-between text-xs">
+                      <span class="text-gray-500 uppercase tracking-wider">Most wins</span>
+                      <span class="text-gray-200 font-medium">{{ track.topWinner.name }} <span class="text-gray-400">({{ track.topWinner.count }})</span></span>
+                    </div>
+                    <div v-if="track.topPoler" class="flex items-center justify-between text-xs">
+                      <span class="text-gray-500 uppercase tracking-wider">Most poles</span>
+                      <span class="text-gray-200 font-medium">{{ track.topPoler.name }} <span class="text-gray-400">({{ track.topPoler.count }})</span></span>
+                    </div>
+                    <div v-if="track.topPodium" class="flex items-center justify-between text-xs">
+                      <span class="text-gray-500 uppercase tracking-wider">Most podiums</span>
+                      <span class="text-gray-200 font-medium">{{ track.topPodium.name }} <span class="text-gray-400">({{ track.topPodium.count }})</span></span>
+                    </div>
+                  </div>
+                  <div class="pt-3 border-t border-slate-700 space-y-1">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="text-gray-500 uppercase tracking-wider">Races</span>
+                      <span class="text-white font-bold text-sm">{{ track.races }}</span>
+                    </div>
+                    <p v-if="track.hasLongVariant" class="text-[10px] text-gray-600 italic">* Includes alternate long layout</p>
+                  </div>
+                </NuxtLink>
               </div>
             </div>
+          </template>
+        </template>
 
-            <div class="pt-3 border-t border-slate-700 space-y-1">
-              <div class="flex items-center justify-between text-xs">
-                <span class="text-gray-500 uppercase tracking-wider">Races</span>
-                <span class="text-white font-bold text-sm">{{ track.races }}</span>
-              </div>
-              <p v-if="track.hasLongVariant" class="text-[10px] text-gray-600 italic">* Includes alternate long layout</p>
-            </div>
-          </NuxtLink>
-        </div>
-
-        <!-- Long layouts section -->
-        <template v-if="sortedLongTracks.length > 0">
-          <div class="mb-4">
-            <h3 class="text-xl font-bold text-slate-700">Long Layouts</h3>
-            <p class="text-gray-500 text-sm mt-1">Alternate extended versions of circuits</p>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <!-- By Races / By Name view -->
+        <template v-else>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-10">
             <NuxtLink
-              v-for="track in sortedLongTracks"
+              v-for="track in sortedRegularTracks"
               :key="track.name"
               :to="`/tracks/${encodeURIComponent(track.name)}`"
-              class="bg-slate-800 rounded-lg p-5 shadow-lg hover:bg-slate-700 transition-colors block"
+              class="bg-slate-800 rounded-lg p-5 shadow-lg hover:bg-slate-700 transition-colors"
             >
               <div class="mb-3">
-                <h3 class="text-lg text-left font-bold text-white leading-tight">{{ track.name }}</h3>
+                <div class="flex items-start justify-between gap-2">
+                  <h3 class="text-lg font-bold text-white leading-tight">{{ track.name }}<span v-if="track.hasLongVariant" class="text-gray-500 font-normal text-sm"> *</span></h3>
+                  <span v-if="formatTrackCountry(track.name)" class="text-xs text-gray-400 flex-shrink-0 text-right mt-0.5">{{ formatTrackCountry(track.name) }}</span>
+                </div>
                 <p class="text-xs text-gray-400 mt-0.5">
                   {{ track.firstSeason === track.lastSeason ? track.firstSeason : `${track.firstSeason} – ${track.lastSeason}` }}
                 </p>
               </div>
-
               <div class="space-y-1.5 mb-3">
                 <div v-if="track.topWinner" class="flex items-center justify-between text-xs">
                   <span class="text-gray-500 uppercase tracking-wider">Most wins</span>
@@ -237,16 +366,62 @@ onMounted(fetchData)
                   <span class="text-gray-200 font-medium">{{ track.topPodium.name }} <span class="text-gray-400">({{ track.topPodium.count }})</span></span>
                 </div>
               </div>
-
               <div class="pt-3 border-t border-slate-700 space-y-1">
                 <div class="flex items-center justify-between text-xs">
                   <span class="text-gray-500 uppercase tracking-wider">Races</span>
                   <span class="text-white font-bold text-sm">{{ track.races }}</span>
                 </div>
+                <p v-if="track.hasLongVariant" class="text-[10px] text-gray-600 italic">* Includes alternate long layout</p>
               </div>
             </NuxtLink>
           </div>
+
+          <template v-if="sortedLongTracks.length > 0">
+            <div class="mb-4">
+              <h3 class="text-xl font-bold text-slate-700">Long Layouts</h3>
+              <p class="text-gray-500 text-sm mt-1">Alternate extended versions of circuits</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <NuxtLink
+                v-for="track in sortedLongTracks"
+                :key="track.name"
+                :to="`/tracks/${encodeURIComponent(track.name)}`"
+                class="bg-slate-800 rounded-lg p-5 shadow-lg hover:bg-slate-700 transition-colors block"
+              >
+                <div class="mb-3">
+                  <div class="flex items-start justify-between gap-2">
+                    <h3 class="text-lg font-bold text-white leading-tight">{{ track.name }}</h3>
+                    <span v-if="formatTrackCountry(track.name)" class="text-xs text-gray-400 flex-shrink-0 text-right mt-0.5">{{ formatTrackCountry(track.name) }}</span>
+                  </div>
+                  <p class="text-xs text-gray-400 mt-0.5">
+                    {{ track.firstSeason === track.lastSeason ? track.firstSeason : `${track.firstSeason} – ${track.lastSeason}` }}
+                  </p>
+                </div>
+                <div class="space-y-1.5 mb-3">
+                  <div v-if="track.topWinner" class="flex items-center justify-between text-xs">
+                    <span class="text-gray-500 uppercase tracking-wider">Most wins</span>
+                    <span class="text-gray-200 font-medium">{{ track.topWinner.name }} <span class="text-gray-400">({{ track.topWinner.count }})</span></span>
+                  </div>
+                  <div v-if="track.topPoler" class="flex items-center justify-between text-xs">
+                    <span class="text-gray-500 uppercase tracking-wider">Most poles</span>
+                    <span class="text-gray-200 font-medium">{{ track.topPoler.name }} <span class="text-gray-400">({{ track.topPoler.count }})</span></span>
+                  </div>
+                  <div v-if="track.topPodium" class="flex items-center justify-between text-xs">
+                    <span class="text-gray-500 uppercase tracking-wider">Most podiums</span>
+                    <span class="text-gray-200 font-medium">{{ track.topPodium.name }} <span class="text-gray-400">({{ track.topPodium.count }})</span></span>
+                  </div>
+                </div>
+                <div class="pt-3 border-t border-slate-700 space-y-1">
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-500 uppercase tracking-wider">Races</span>
+                    <span class="text-white font-bold text-sm">{{ track.races }}</span>
+                  </div>
+                </div>
+              </NuxtLink>
+            </div>
+          </template>
         </template>
+
       </template>
 
       <p v-else-if="!loading" class="text-gray-600">No data found</p>

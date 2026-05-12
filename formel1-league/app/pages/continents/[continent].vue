@@ -8,7 +8,7 @@ const config = useRuntimeConfig()
 const supabase = createClient(config.public.supabaseUrl, config.public.supabasePublishableKey)
 const route = useRoute()
 
-const trackName = computed(() => decodeURIComponent(route.params.track))
+const continentName = computed(() => decodeURIComponent(route.params.continent))
 
 const allResults = ref([])
 const pointsData = ref([])
@@ -82,7 +82,7 @@ const trackInfo = {
   'Sentul':                   { country: 'Indonesia'      },
   'Sepang':                   { country: 'Malaysia'       },
   'Shanghai':                 { country: 'China'          },
-  'Silverstone':              { country: 'England' },
+  'Silverstone':              { country: 'England'        },
   'Spa-Francorchamps':        { country: 'Belgium'        },
   'Suzuka':                   { country: 'Japan'          },
   'Sveg Raceway':             { country: 'Sweden'         },
@@ -90,10 +90,18 @@ const trackInfo = {
   'Zandvoort':                { country: 'Netherlands'    },
 }
 
-function formatTrackCountry(name) {
-  const info = trackInfo[name]
-  if (!info) return undefined
-  return info.represents ? `${info.country} (${info.represents})` : info.country
+const countryContinent = {
+  'Austria': 'Europe', 'Azerbaijan': 'Europe', 'Belgium': 'Europe',
+  'England': 'Europe', 'France': 'Europe', 'Germany': 'Europe',
+  'Hungary': 'Europe', 'Italy': 'Europe', 'Monaco': 'Europe',
+  'Netherlands': 'Europe', 'Norway': 'Europe', 'Portugal': 'Europe',
+  'Scotland': 'Europe', 'Spain': 'Europe', 'Sweden': 'Europe',
+  'Bahrain': 'Middle East', 'Qatar': 'Middle East', 'Saudi Arabia': 'Middle East',
+  'Australia': 'Asia-Pacific',
+  'China': 'Asia-Pacific', 'India': 'Asia-Pacific', 'Indonesia': 'Asia-Pacific',
+  'Japan': 'Asia-Pacific', 'Malaysia': 'Asia-Pacific', 'South Korea': 'Asia-Pacific', 'Turkey': 'Asia-Pacific',
+  'Brazil': 'Americas', 'Canada': 'Americas', 'Mexico': 'Americas', 'USA': 'Americas',
+  'South Africa': 'Africa',
 }
 
 const teamColors = {
@@ -167,20 +175,38 @@ async function fetchData() {
   }
 }
 
-const trackRaces = computed(() =>
-  allResults.value.filter(r => processTrackName(r.Track).name === trackName.value)
+const continentTrackNames = computed(() =>
+  Object.entries(trackInfo)
+    .filter(([, info]) => (countryContinent[info.country] ?? '') === continentName.value)
+    .map(([name]) => name)
 )
 
-const hasUpdtdVariant = computed(() =>
-  trackRaces.value.some(r => r.Track?.includes('(UPDTD)'))
+const continentRaces = computed(() =>
+  allResults.value.filter(r =>
+    continentTrackNames.value.includes(processTrackName(r.Track).name)
+  )
 )
+
+const trackCount = computed(() => {
+  const names = new Set(continentRaces.value.map(r => processTrackName(r.Track).name))
+  return names.size
+})
+
+const countryCount = computed(() => {
+  const countries = new Set(
+    continentRaces.value
+      .map(r => trackInfo[processTrackName(r.Track).name]?.country)
+      .filter(Boolean)
+  )
+  return countries.size
+})
 
 const headerStats = computed(() => {
   const winMap = new Map()
   const poleMap = new Map()
   const podiumMap = new Map()
 
-  trackRaces.value.forEach(r => {
+  continentRaces.value.forEach(r => {
     const w = r.Winner?.Name
     if (w) {
       winMap.set(w, (winMap.get(w) || 0) + 1)
@@ -199,7 +225,7 @@ const headerStats = computed(() => {
   const topPodium = [...podiumMap.entries()].sort((a, b) => b[1] - a[1])[0]
 
   return {
-    totalRaces: trackRaces.value.length,
+    totalRaces: continentRaces.value.length,
     topWinner: topWinner ? { name: topWinner[0], count: topWinner[1] } : null,
     topPoler: topPoler ? { name: topPoler[0], count: topPoler[1] } : null,
     topPodium: topPodium ? { name: topPodium[0], count: topPodium[1] } : null,
@@ -209,7 +235,7 @@ const headerStats = computed(() => {
 const topDrivers = computed(() => {
   const driverMap = new Map()
 
-  trackRaces.value.forEach(r => {
+  continentRaces.value.forEach(r => {
     const ensure = (name) => {
       if (!name) return null
       if (!driverMap.has(name)) driverMap.set(name, { name, wins: 0, poles: 0, podiums: 0 })
@@ -256,7 +282,7 @@ const topTeams = computed(() => {
     return teamMap.get(name)
   }
 
-  trackRaces.value.forEach(r => {
+  continentRaces.value.forEach(r => {
     const winTeam = r.WinnerTeam?.TeamName
     if (winTeam) {
       const t = ensure(winTeam)
@@ -286,9 +312,7 @@ const topTeams = computed(() => {
     .slice(0, 10)
 })
 
-const notFound = computed(() => !loading.value && trackRaces.value.length === 0 && allResults.value.length > 0)
-
-const formattedTrackCountry = computed(() => formatTrackCountry(trackName.value))
+const notFound = computed(() => !loading.value && continentRaces.value.length === 0 && allResults.value.length > 0)
 
 onMounted(fetchData)
 </script>
@@ -304,21 +328,29 @@ onMounted(fetchData)
       </div>
 
       <p v-if="loading" class="text-gray-600">Loading...</p>
-      <p v-else-if="notFound" class="text-gray-600">Track "{{ trackName }}" not found.</p>
+      <p v-else-if="notFound" class="text-gray-600">Continent "{{ continentName }}" not found.</p>
 
-      <div v-else-if="trackRaces.length > 0">
+      <div v-else-if="continentRaces.length > 0">
         <!-- Header card -->
         <div class="bg-slate-800 rounded-lg p-6 mb-6 shadow-lg">
           <div class="flex items-baseline justify-between gap-4 mb-1">
-            <h2 class="text-3xl font-bold text-white">{{ trackName }}</h2>
-            <span v-if="formattedTrackCountry" class="text-sm text-gray-400 flex-shrink-0">{{ formattedTrackCountry }}</span>
+            <h2 class="text-3xl font-bold text-white">{{ continentName }}</h2>
           </div>
-          <p v-if="hasUpdtdVariant" class="text-xs text-gray-500 mb-4">Includes updated layout variant</p>
           <div class="flex flex-col sm:flex-row gap-6 items-start sm:items-center mt-4">
-            <!-- Races -->
-            <div class="flex-none text-left pr-6 sm:border-r border-slate-600">
-              <div class="text-5xl font-bold text-white">{{ headerStats.totalRaces }}</div>
-              <div class="text-xs text-gray-400 uppercase mt-1 tracking-widest">Races</div>
+            <!-- Races + Tracks + Countries -->
+            <div class="flex gap-8 flex-none pr-6 sm:border-r border-slate-600">
+              <div class="text-left">
+                <div class="text-5xl font-bold text-white">{{ headerStats.totalRaces }}</div>
+                <div class="text-xs text-gray-400 uppercase mt-1 tracking-widest">Races</div>
+              </div>
+              <div class="text-left">
+                <div class="text-5xl font-bold text-white">{{ trackCount }}</div>
+                <div class="text-xs text-gray-400 uppercase mt-1 tracking-widest">Tracks</div>
+              </div>
+              <div class="text-left">
+                <div class="text-5xl font-bold text-white">{{ countryCount }}</div>
+                <div class="text-xs text-gray-400 uppercase mt-1 tracking-widest">Countries</div>
+              </div>
             </div>
             <!-- Most Wins / Podiums / Poles -->
             <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -432,6 +464,8 @@ onMounted(fetchData)
             <thead class="bg-slate-700">
               <tr>
                 <th class="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase">Season</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase">Country</th>
+                <th class="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase">Track</th>
                 <th class="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase">Grand Prix</th>
                 <th class="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase">Pole</th>
                 <th class="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase">Winner</th>
@@ -440,8 +474,20 @@ onMounted(fetchData)
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700">
-              <tr v-for="race in trackRaces" :key="race.id">
+              <tr v-for="race in continentRaces" :key="race.id">
                 <td class="px-3 py-3 text-sm text-white font-medium whitespace-nowrap">{{ race.Seasons?.Season }}</td>
+                <td class="px-3 py-3 text-sm whitespace-nowrap">
+                  <NuxtLink
+                    :to="`/countries/${encodeURIComponent(trackInfo[processTrackName(race.Track).name]?.country ?? '')}`"
+                    class="text-gray-300 hover:text-white hover:underline transition-colors"
+                  >{{ trackInfo[processTrackName(race.Track).name]?.country || '—' }}</NuxtLink>
+                </td>
+                <td class="px-3 py-3 text-sm whitespace-nowrap">
+                  <NuxtLink
+                    :to="`/tracks/${encodeURIComponent(processTrackName(race.Track).name)}`"
+                    class="text-gray-300 hover:text-white hover:underline transition-colors"
+                  >{{ processTrackName(race.Track).name }}</NuxtLink>
+                </td>
                 <td class="px-3 py-3 text-sm text-gray-300 whitespace-nowrap">
                   {{ race.GrandPrix }}<span v-if="race.Track?.includes('(Long)')" class="text-gray-500 text-xs ml-1">*</span>
                 </td>
@@ -464,7 +510,7 @@ onMounted(fetchData)
               </tr>
             </tbody>
           </table>
-          <p v-if="trackRaces.some(r => r.Track?.includes('(Long)'))" class="text-[11px] text-gray-500 italic mt-2 px-1">* Alternate long layout</p>
+          <p v-if="continentRaces.some(r => r.Track?.includes('(Long)'))" class="text-[11px] text-gray-500 italic mt-2 px-1">* Alternate long layout</p>
         </div>
       </div>
     </div>

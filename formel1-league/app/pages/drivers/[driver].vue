@@ -423,44 +423,8 @@ onMounted(fetchData)
           </div>
         </div>
 
-        <!-- Per-season table -->
-        <div class="flex flex-col lg:flex-row gap-10 mb-8 items-start">
-          
-          <div class="flex-none">
-            <div class="overflow-x-auto">
-              <table class="mr-auto bg-slate-800 rounded-lg overflow-hidden shadow-lg transition-all">
-                <thead class="bg-slate-700">
-                  <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Season</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Team</th>
-                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase">Points</th>
-                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase">Wins</th>
-                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase">Podiums</th>
-                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase">Poles</th>
-                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase">Pos.</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-700">
-                  <tr v-for="row in seasonRows" :key="row.season">
-                    <td class="px-4 py-3 text-sm text-white font-medium">Season {{ row.season }}</td>
-                    <td class="px-4 py-3">
-                      <span class="px-2 py-0.5 rounded text-[10px] font-semibold" :style="getTeamStyle(row.team)">{{ row.team }}</span>
-                    </td>
-                    <td class="px-4 py-3 text-sm text-gray-300 text-center">{{ row.points }}</td>
-                    <td class="px-4 py-3 text-sm text-gray-300 text-center font-semibold">{{ row.wins }}</td>
-                    <td class="px-4 py-3 text-sm text-gray-300 text-center">{{ row.podiums }}</td>
-                    <td class="px-4 py-3 text-sm text-gray-300 text-center">{{ row.poles }}</td>
-                    <td class="px-4 py-3 text-sm text-center">
-                      <span v-if="row.champion" class="text-yellow-400">🏆</span>
-                      <span v-else class="text-gray-500 font-mono text-xs">P{{ row.position }}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-<div class="flex-1 flex flex-col gap-6">
+        <!-- Stat cards -->
+        <div class="flex flex-col gap-6 mb-8">
 <div class="flex flex-col xl:flex-row gap-6 items-start">
 
   <div class="flex-1 min-w-[320px] bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700">
@@ -480,7 +444,7 @@ onMounted(fetchData)
     </div>
     
     <div class="p-4 space-y-4">
-      <<div v-for="(s, index) in topSeasons" :key="s.season" class="flex items-center justify-between border-b border-slate-700 pb-3 last:border-0 last:pb-0">
+      <div v-for="(s, index) in topSeasons" :key="s.season" class="flex items-center justify-between border-b border-slate-700 pb-3 last:border-0 last:pb-0">
   <div class="flex items-center gap-3">
     <span class="text-slate-500 font-mono font-bold text-sm">#{{ index + 1 }}</span>
     <div class="flex items-center gap-2">
@@ -690,42 +654,80 @@ onMounted(fetchData)
   </div>
 
 </div>
-</div>
-
         </div>
 
+        <!-- Bottom row: season table left, race wins/poles right -->
+        <div class="flex flex-col lg:flex-row gap-10 items-start mb-8">
 
-        <!-- Race wins and poles -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 class="text-xl font-bold text-slate-800 mb-3">Race Wins ({{ raceWins.length }})</h3>
-            <div v-if="raceWins.length > 0" class="bg-slate-800 rounded-lg overflow-hidden shadow-lg">
-              <div
-                v-for="win in raceWins"
-                :key="`win-${win.SeasonID}-${win.Round}`"
-                class="px-4 py-3 border-b border-slate-700 last:border-0"
-              >
-                <div class="text-sm text-white font-medium">{{ win.GrandPrix }}</div>
-                <div class="text-xs text-gray-400 mt-0.5">{{ win.Track }} · Season {{ win.Seasons?.Season }}</div>
-              </div>
+          <div class="flex-none">
+            <h3 class="text-lg font-bold text-slate-700 mb-3">Season by season</h3>
+            <div class="overflow-x-auto">
+              <table class="mr-auto bg-slate-800 rounded-lg overflow-hidden shadow-lg transition-all">
+                <thead class="bg-slate-700">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Season</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Team</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase">Points</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase">Wins</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase">Podiums</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase">Poles</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase">Pos.</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700">
+                  <tr v-for="row in seasonRows" :key="row.season">
+                    <td class="px-4 py-3 text-sm text-white font-medium">Season {{ row.season }}</td>
+                    <td class="px-4 py-3">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-semibold" :style="getTeamStyle(row.team)">{{ row.team }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-300 text-center">{{ row.points }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-300 text-center font-semibold">{{ row.wins }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-300 text-center">{{ row.podiums }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-300 text-center">{{ row.poles }}</td>
+                    <td class="px-4 py-3 text-sm text-center">
+                      <span v-if="row.champion" class="text-yellow-400">🏆</span>
+                      <span v-else class="text-gray-500 font-mono text-xs">P{{ row.position }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <p v-else class="text-gray-500 text-sm">No race wins recorded</p>
           </div>
 
-          <div>
-            <h3 class="text-xl font-bold text-slate-800 mb-3">Pole Positions ({{ racePoles.length }})</h3>
-            <div v-if="racePoles.length > 0" class="bg-slate-800 rounded-lg overflow-hidden shadow-lg">
-              <div
-                v-for="pole in racePoles"
-                :key="`pole-${pole.SeasonID}-${pole.Round}`"
-                class="px-4 py-3 border-b border-slate-700 last:border-0"
-              >
-                <div class="text-sm text-white font-medium">{{ pole.GrandPrix }}</div>
-                <div class="text-xs text-gray-400 mt-0.5">{{ pole.Track }} · Season {{ pole.Seasons?.Season }}</div>
+          <div class="flex-1">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 class="text-xl font-bold text-slate-800 mb-3">Race Wins ({{ raceWins.length }})</h3>
+                <div v-if="raceWins.length > 0" class="bg-slate-800 rounded-lg overflow-hidden shadow-lg">
+                  <div
+                    v-for="win in raceWins"
+                    :key="`win-${win.SeasonID}-${win.Round}`"
+                    class="px-4 py-3 border-b border-slate-700 last:border-0"
+                  >
+                    <div class="text-sm text-white font-medium">{{ win.GrandPrix }}</div>
+                    <div class="text-xs text-gray-400 mt-0.5">{{ win.Track }} · Season {{ win.Seasons?.Season }}</div>
+                  </div>
+                </div>
+                <p v-else class="text-gray-500 text-sm">No race wins recorded</p>
+              </div>
+
+              <div>
+                <h3 class="text-xl font-bold text-slate-800 mb-3">Pole Positions ({{ racePoles.length }})</h3>
+                <div v-if="racePoles.length > 0" class="bg-slate-800 rounded-lg overflow-hidden shadow-lg">
+                  <div
+                    v-for="pole in racePoles"
+                    :key="`pole-${pole.SeasonID}-${pole.Round}`"
+                    class="px-4 py-3 border-b border-slate-700 last:border-0"
+                  >
+                    <div class="text-sm text-white font-medium">{{ pole.GrandPrix }}</div>
+                    <div class="text-xs text-gray-400 mt-0.5">{{ pole.Track }} · Season {{ pole.Seasons?.Season }}</div>
+                  </div>
+                </div>
+                <p v-else class="text-gray-500 text-sm">No pole positions recorded</p>
               </div>
             </div>
-            <p v-else class="text-gray-500 text-sm">No pole positions recorded</p>
           </div>
+
         </div>
       </div>
     </div>
