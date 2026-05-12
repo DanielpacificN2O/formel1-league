@@ -372,6 +372,13 @@ const seasonRows = computed(() =>
   })
 )
 
+const avgChampionshipPosition = computed(() => {
+  const rows = seasonRows.value.filter(r => r.position != null)
+  if (!rows.length) return null
+  const avg = rows.reduce((sum, r) => sum + r.position, 0) / rows.length
+  return avg.toFixed(1)
+})
+
 const notFound = computed(() => !loading.value && driverSeasons.value.length === 0 && allPoints.value.length > 0)
 
 onMounted(fetchData)
@@ -394,7 +401,7 @@ onMounted(fetchData)
         <!-- Header card -->
         <div class="bg-slate-800 rounded-lg p-6 mb-6 shadow-lg">
           <h2 class="text-3xl font-bold text-white mb-4">{{ driverName }}</h2>
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <div class="text-center">
               <div class="text-3xl font-bold text-white">{{ careerTotals.wins }}</div>
               <div class="text-xs text-gray-400 uppercase mt-1">Wins</div>
@@ -410,6 +417,10 @@ onMounted(fetchData)
             <div class="text-center">
               <div class="text-3xl font-bold text-white">{{ careerTotals.points }}</div>
               <div class="text-xs text-gray-400 uppercase mt-1">Points</div>
+            </div>
+            <div class="text-center">
+              <div class="text-3xl font-bold text-white">{{ avgChampionshipPosition ?? '—' }}</div>
+              <div class="text-xs text-gray-400 uppercase mt-1">Avg. Championship Position</div>
             </div>
             <div class="text-center">
               <div class="text-3xl font-bold" :class="careerTotals.championships > 0 ? 'text-yellow-400' : 'text-white'">

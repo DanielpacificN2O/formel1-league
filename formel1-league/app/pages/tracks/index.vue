@@ -91,7 +91,7 @@ function formatTrackCountry(name) {
 }
 
 const countryContinent = {
-  'Austria': 'Europe', 'Azerbaijan': 'Europe', 'Belgium': 'Europe',
+  'Austria': 'Europe', 'Azerbaijan': 'Middle East', 'Belgium': 'Europe',
   'England': 'Europe', 'France': 'Europe', 'Germany': 'Europe',
   'Hungary': 'Europe', 'Italy': 'Europe', 'Monaco': 'Europe',
   'Netherlands': 'Europe', 'Norway': 'Europe', 'Portugal': 'Europe',
@@ -99,7 +99,7 @@ const countryContinent = {
   'Bahrain': 'Middle East', 'Qatar': 'Middle East', 'Saudi Arabia': 'Middle East',
   'Australia': 'Asia-Pacific',
   'China': 'Asia-Pacific', 'India': 'Asia-Pacific', 'Indonesia': 'Asia-Pacific',
-  'Japan': 'Asia-Pacific', 'Malaysia': 'Asia-Pacific', 'South Korea': 'Asia-Pacific', 'Turkey': 'Asia-Pacific',
+  'Japan': 'Asia-Pacific', 'Malaysia': 'Asia-Pacific', 'South Korea': 'Asia-Pacific', 'Turkey': 'Middle East',
   'Brazil': 'Americas', 'Canada': 'Americas', 'Mexico': 'Americas', 'USA': 'Americas',
   'South Africa': 'Africa',
 }
