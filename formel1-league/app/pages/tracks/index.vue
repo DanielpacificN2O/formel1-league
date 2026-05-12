@@ -104,6 +104,25 @@ const countryContinent = {
   'South Africa': 'Africa',
 }
 
+function packCountriesIntoRows(countries, maxCols = 6) {
+  const rows = []
+  let currentRow = []
+  let currentCount = 0
+  for (const country of countries) {
+    const n = country.tracks.length
+    if (currentRow.length > 0 && currentCount + n > maxCols) {
+      rows.push(currentRow)
+      currentRow = [country]
+      currentCount = n
+    } else {
+      currentRow.push(country)
+      currentCount += n
+    }
+  }
+  if (currentRow.length > 0) rows.push(currentRow)
+  return rows
+}
+
 async function fetchData() {
   loading.value = true
   try {
@@ -236,6 +255,10 @@ const tracksByContinent = computed(() => {
   return Array.from(continentMap.values()).sort((a, b) => b.totalRaces - a.totalRaces)
 })
 
+const tracksByContinentPacked = computed(() =>
+  tracksByContinent.value.map(cg => ({ ...cg, rows: packCountriesIntoRows(cg.countries) }))
+)
+
 onMounted(fetchData)
 </script>
 
@@ -270,67 +293,80 @@ onMounted(fetchData)
 
         <!-- By Country view -->
         <template v-if="sortBy === 'country'">
-          <template v-for="continentGroup in tracksByContinent" :key="continentGroup.continent">
-            <div
-              v-for="(countryGroup, countryIndex) in continentGroup.countries"
-              :key="countryGroup.country"
-              class="mb-10"
-            >
-              <div class="mb-4">
-                <h2 v-if="countryIndex === 0" class="text-3xl font-bold text-slate-800 mb-1">
-                  <NuxtLink
-                    :to="`/continents/${encodeURIComponent(continentGroup.continent)}`"
-                    class="hover:text-slate-600 hover:underline transition-colors"
-                  >{{ continentGroup.continent }}</NuxtLink>
-                </h2>
-                <h3 class="text-lg font-semibold text-slate-600">
-                  <NuxtLink
-                    :to="`/countries/${encodeURIComponent(countryGroup.country)}`"
-                    class="hover:text-slate-800 hover:underline transition-colors"
-                  >{{ countryGroup.country }}</NuxtLink>
-                  <span class="text-sm font-normal text-gray-500 ml-1">{{ countryGroup.totalRaces }}</span>
-                </h3>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <NuxtLink
-                  v-for="track in countryGroup.tracks"
-                  :key="track.name"
-                  :to="`/tracks/${encodeURIComponent(track.name)}`"
-                  class="bg-slate-800 rounded-lg p-5 shadow-lg hover:bg-slate-700 transition-colors"
+          <template v-for="continentGroup in tracksByContinentPacked" :key="continentGroup.continent">
+            <h2 class="text-3xl font-bold text-slate-800 mb-3">
+              <NuxtLink
+                :to="`/continents/${encodeURIComponent(continentGroup.continent)}`"
+                class="hover:text-slate-600 hover:underline transition-colors"
+              >{{ continentGroup.continent }}</NuxtLink>
+            </h2>
+
+            <div v-for="(row, rowIndex) in continentGroup.rows" :key="rowIndex" class="mb-4">
+              <div class="grid grid-cols-6 gap-3">
+                <div
+                  v-for="countryGroup in row"
+                  :key="countryGroup.country"
+                  :style="{ gridColumn: 'span ' + Math.min(countryGroup.tracks.length, 6) }"
+                  class="bg-slate-300/60 rounded-xl p-2"
                 >
-                  <div class="mb-3">
-                    <div class="flex items-start justify-between gap-2">
-                      <h3 class="text-lg font-bold text-white leading-tight">{{ track.name }}<span v-if="track.hasLongVariant" class="text-gray-500 font-normal text-sm"> *</span></h3>
-                      <span v-if="formatTrackCountry(track.name)" class="text-xs text-gray-400 flex-shrink-0 text-right mt-0.5">{{ formatTrackCountry(track.name) }}</span>
-                    </div>
-                    <p class="text-xs text-gray-400 mt-0.5">
-                      {{ track.firstSeason === track.lastSeason ? track.firstSeason : `${track.firstSeason} – ${track.lastSeason}` }}
-                    </p>
+                  <!-- Country header -->
+                  <div class="flex items-baseline gap-1 mb-2 px-1">
+                    <h3 class="text-sm font-semibold text-slate-600">
+                      <NuxtLink
+                        :to="`/countries/${encodeURIComponent(countryGroup.country)}`"
+                        class="hover:text-slate-800 hover:underline transition-colors"
+                      >{{ countryGroup.country }}</NuxtLink>
+                    </h3>
+                    <span class="text-xs font-normal text-gray-500">{{ countryGroup.totalRaces }}</span>
                   </div>
-                  <div class="space-y-1.5 mb-3">
-                    <div v-if="track.topWinner" class="flex items-center justify-between text-xs">
-                      <span class="text-gray-500 uppercase tracking-wider">Most wins</span>
-                      <span class="text-gray-200 font-medium">{{ track.topWinner.name }} <span class="text-gray-400">({{ track.topWinner.count }})</span></span>
-                    </div>
-                    <div v-if="track.topPoler" class="flex items-center justify-between text-xs">
-                      <span class="text-gray-500 uppercase tracking-wider">Most poles</span>
-                      <span class="text-gray-200 font-medium">{{ track.topPoler.name }} <span class="text-gray-400">({{ track.topPoler.count }})</span></span>
-                    </div>
-                    <div v-if="track.topPodium" class="flex items-center justify-between text-xs">
-                      <span class="text-gray-500 uppercase tracking-wider">Most podiums</span>
-                      <span class="text-gray-200 font-medium">{{ track.topPodium.name }} <span class="text-gray-400">({{ track.topPodium.count }})</span></span>
-                    </div>
+                  <!-- Nested card grid sized to this country's track count -->
+                  <div
+                    class="grid gap-2"
+                    :style="{ gridTemplateColumns: `repeat(${Math.min(countryGroup.tracks.length, 6)}, 1fr)` }"
+                  >
+                    <NuxtLink
+                      v-for="track in countryGroup.tracks"
+                      :key="track.name"
+                      :to="`/tracks/${encodeURIComponent(track.name)}`"
+                      class="bg-slate-800 rounded-lg p-3 shadow-lg hover:bg-slate-700 transition-colors"
+                    >
+                      <div class="mb-2">
+                        <div class="flex items-start justify-between gap-1">
+                          <h3 class="text-sm font-bold text-white leading-tight">{{ track.name }}<span v-if="track.hasLongVariant" class="text-gray-500 font-normal text-xs"> *</span></h3>
+                          <span v-if="formatTrackCountry(track.name)" class="text-[10px] text-gray-400 flex-shrink-0 text-right mt-0.5">{{ formatTrackCountry(track.name) }}</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-0.5">
+                          {{ track.firstSeason === track.lastSeason ? track.firstSeason : `${track.firstSeason} – ${track.lastSeason}` }}
+                        </p>
+                      </div>
+                      <div class="space-y-1 mb-2">
+                        <div v-if="track.topWinner" class="flex items-center justify-between text-[10px]">
+                          <span class="text-gray-500 uppercase tracking-wider">Wins</span>
+                          <span class="text-gray-200 font-medium">{{ track.topWinner.name }} <span class="text-gray-400">({{ track.topWinner.count }})</span></span>
+                        </div>
+                        <div v-if="track.topPoler" class="flex items-center justify-between text-[10px]">
+                          <span class="text-gray-500 uppercase tracking-wider">Poles</span>
+                          <span class="text-gray-200 font-medium">{{ track.topPoler.name }} <span class="text-gray-400">({{ track.topPoler.count }})</span></span>
+                        </div>
+                        <div v-if="track.topPodium" class="flex items-center justify-between text-[10px]">
+                          <span class="text-gray-500 uppercase tracking-wider">Podiums</span>
+                          <span class="text-gray-200 font-medium">{{ track.topPodium.name }} <span class="text-gray-400">({{ track.topPodium.count }})</span></span>
+                        </div>
+                      </div>
+                      <div class="pt-2 border-t border-slate-700">
+                        <div class="flex items-center justify-between text-[10px]">
+                          <span class="text-gray-500 uppercase tracking-wider">Races</span>
+                          <span class="text-white font-bold text-xs">{{ track.races }}</span>
+                        </div>
+                        <p v-if="track.hasLongVariant" class="text-[9px] text-gray-600 italic mt-0.5">* Includes alternate long layout</p>
+                      </div>
+                    </NuxtLink>
                   </div>
-                  <div class="pt-3 border-t border-slate-700 space-y-1">
-                    <div class="flex items-center justify-between text-xs">
-                      <span class="text-gray-500 uppercase tracking-wider">Races</span>
-                      <span class="text-white font-bold text-sm">{{ track.races }}</span>
-                    </div>
-                    <p v-if="track.hasLongVariant" class="text-[10px] text-gray-600 italic">* Includes alternate long layout</p>
-                  </div>
-                </NuxtLink>
+                </div>
               </div>
             </div>
+
+            <div class="mb-6"></div>
           </template>
         </template>
 
