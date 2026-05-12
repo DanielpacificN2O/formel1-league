@@ -39,6 +39,24 @@ async function fetchData() {
 const driverCards = computed(() => {
   const statsMap = new Map()
 
+  const seasonDriverStandingsMap = new Map()
+  const bySeasonDriverMap = new Map()
+  racerSeasons.value.forEach(entry => {
+    const season = entry.Seasons?.Season
+    const racerId = entry.Racer?.id
+    if (!season || !racerId) return
+    if (!bySeasonDriverMap.has(season)) bySeasonDriverMap.set(season, new Map())
+    const sm = bySeasonDriverMap.get(season)
+    if (!sm.has(racerId)) sm.set(racerId, { racerId, points: 0, wins: 0 })
+    sm.get(racerId).points += entry.Points || 0
+    sm.get(racerId).wins += entry.Wins || 0
+  })
+  bySeasonDriverMap.forEach((sm, season) => {
+    Array.from(sm.values())
+      .sort((a, b) => b.points - a.points || b.wins - a.wins)
+      .forEach((e, i) => seasonDriverStandingsMap.set(`${season}-${e.racerId}`, i + 1))
+  })
+
   const seasonWinnerMap = new Map()
   racerSeasons.value.forEach(entry => {
     const season = entry.Seasons?.Season
@@ -92,7 +110,15 @@ const driverCards = computed(() => {
   })
 
   return Array.from(statsMap.values())
-    .map(d => ({ ...d, seasonsRaced: d.seasonsSet.size }))
+    .map(d => {
+      const positions = Array.from(d.seasonsSet)
+        .map(season => seasonDriverStandingsMap.get(`${season}-${d.id}`))
+        .filter(p => p != null)
+      const avgPosition = positions.length
+        ? (positions.reduce((a, b) => a + b, 0) / positions.length).toFixed(2)
+        : null
+      return { ...d, seasonsRaced: d.seasonsSet.size, avgPosition }
+    })
 })
 
 const teamColors = {
@@ -214,8 +240,11 @@ onMounted(fetchData)
           :to="`/drivers/${encodeURIComponent(driver.name)}`"
           class="bg-slate-800 rounded-lg p-5 shadow-lg hover:bg-slate-700 transition-colors"
         >
-          <div class="mb-3">
-            <h3 class="text-xl text-left font-bold text-white">{{ driver.name }}</h3>
+          <div class="mb-3 flex items-start justify-between gap-2">
+            <h3 class="text-xl text-left font-bold text-white leading-tight">{{ driver.name }}</h3>
+            <span class="text-xs text-gray-400 whitespace-nowrap mt-1">
+              Avg Championship Finish <span class="text-white font-bold">{{ driver.avgPosition ?? '—' }}</span>
+            </span>
           </div>
 
           <div class="grid grid-cols-3 gap-2 mb-3">

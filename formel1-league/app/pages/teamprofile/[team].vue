@@ -90,6 +90,23 @@ const allDriverChampionMap = computed(() => {
   return map
 })
 
+const driverStandingsMap = computed(() => {
+  const bySeasonMap = new Map()
+  allPoints.value.forEach(entry => {
+    const season = entry.Seasons?.Season
+    const racerId = entry.Racer?.id
+    if (!season || !racerId) return
+    if (!bySeasonMap.has(season)) bySeasonMap.set(season, [])
+    bySeasonMap.get(season).push({ racerId, points: entry.Points || 0, wins: entry.Wins || 0 })
+  })
+  const posMap = new Map()
+  bySeasonMap.forEach((entries, season) => {
+    entries.sort((a, b) => b.points - a.points || b.wins - a.wins)
+    entries.forEach((e, i) => posMap.set(`${season}-${e.racerId}`, i + 1))
+  })
+  return posMap
+})
+
 const seasonRows = computed(() =>
   teamSeasons.value.map(s => ({
     ...s,
@@ -119,6 +136,28 @@ const careerTotals = computed(() => {
     }
   })
   return totals
+})
+
+const avgTeamPosition = computed(() => {
+  const rows = seasonRows.value.filter(s => s.position != null)
+  if (!rows.length) return null
+  return (rows.reduce((sum, s) => sum + s.position, 0) / rows.length).toFixed(1)
+})
+
+const avgFirstDriverPosition = computed(() => {
+  const positions = seasonRows.value
+    .map(s => s.drivers[0] ? driverStandingsMap.value.get(`${s.season}-${s.drivers[0].id}`) : null)
+    .filter(p => p != null)
+  if (!positions.length) return null
+  return (positions.reduce((a, b) => a + b, 0) / positions.length).toFixed(1)
+})
+
+const avgSecondDriverPosition = computed(() => {
+  const positions = seasonRows.value
+    .map(s => s.drivers[1] ? driverStandingsMap.value.get(`${s.season}-${s.drivers[1].id}`) : null)
+    .filter(p => p != null)
+  if (!positions.length) return null
+  return (positions.reduce((a, b) => a + b, 0) / positions.length).toFixed(1)
 })
 
 const topSeasons = computed(() =>
@@ -402,7 +441,7 @@ onMounted(fetchData)
           <h2 class="text-3xl font-bold text-white mb-4">
             <span class="px-3 py-1 rounded text-2xl font-bold" :style="getTeamStyle(teamName)">{{ teamName }}</span>
           </h2>
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-4 items-center">
             <div class="text-center">
               <div class="text-3xl font-bold text-white">{{ careerTotals.wins }}</div>
               <div class="text-xs text-gray-400 uppercase mt-1">Wins</div>
@@ -420,10 +459,24 @@ onMounted(fetchData)
               <div class="text-xs text-gray-400 uppercase mt-1">Points</div>
             </div>
             <div class="text-center">
+              <div class="text-3xl font-bold text-white">{{ avgTeamPosition ?? '—' }}</div>
+              <div class="text-xs text-gray-400 uppercase mt-1">Avg. Pos</div>
+            </div>
+            <div class="text-center">
               <div class="text-3xl font-bold" :class="careerTotals.championships > 0 ? 'text-yellow-400' : 'text-white'">
                 {{ careerTotals.championships }}
               </div>
               <div class="text-xs text-gray-400 uppercase mt-1">Team Titles</div>
+            </div>
+            <div class="flex flex-col items-center justify-center gap-2">
+              <div class="text-center">
+                <div class="text-xl font-bold text-white">{{ avgFirstDriverPosition ?? '—' }}</div>
+                <div class="text-[10px] text-gray-400 uppercase mt-0.5">Avg. 1st Driver</div>
+              </div>
+              <div class="text-center">
+                <div class="text-xl font-bold text-white">{{ avgSecondDriverPosition ?? '—' }}</div>
+                <div class="text-[10px] text-gray-400 uppercase mt-0.5">Avg. 2nd Driver</div>
+              </div>
             </div>
             <div class="text-center">
               <div class="text-3xl font-bold" :class="careerTotals.driverChampionships > 0 ? 'text-yellow-400' : 'text-white'">

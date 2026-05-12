@@ -344,13 +344,17 @@ const seasonStandingsMap = computed(() => {
     const season = entry.Seasons?.Season
     const racerId = entry.Racer?.id
     if (!season || !racerId) return
-    if (!bySeasonMap.has(season)) bySeasonMap.set(season, [])
-    bySeasonMap.get(season).push({ racerId, points: entry.Points || 0, wins: entry.Wins || 0 })
+    if (!bySeasonMap.has(season)) bySeasonMap.set(season, new Map())
+    const sm = bySeasonMap.get(season)
+    if (!sm.has(racerId)) sm.set(racerId, { racerId, points: 0, wins: 0 })
+    sm.get(racerId).points += entry.Points || 0
+    sm.get(racerId).wins += entry.Wins || 0
   })
   const posMap = new Map()
-  bySeasonMap.forEach((entries, season) => {
-    entries.sort((a, b) => b.points - a.points || b.wins - a.wins)
-    entries.forEach((e, i) => posMap.set(`${season}-${e.racerId}`, i + 1))
+  bySeasonMap.forEach((sm, season) => {
+    Array.from(sm.values())
+      .sort((a, b) => b.points - a.points || b.wins - a.wins)
+      .forEach((e, i) => posMap.set(`${season}-${e.racerId}`, i + 1))
   })
   return posMap
 })
@@ -373,10 +377,18 @@ const seasonRows = computed(() =>
 )
 
 const avgChampionshipPosition = computed(() => {
-  const rows = seasonRows.value.filter(r => r.position != null)
-  if (!rows.length) return null
-  const avg = rows.reduce((sum, r) => sum + r.position, 0) / rows.length
-  return avg.toFixed(1)
+  const racerId = driverSeasons.value[0]?.Racer?.id
+  if (!racerId) return null
+  const uniqueSeasons = [...new Set(
+    allPoints.value
+      .filter(e => e.Racer?.id === racerId && e.Seasons?.Season)
+      .map(e => e.Seasons.Season)
+  )]
+  const positions = uniqueSeasons
+    .map(season => seasonStandingsMap.value.get(`${season}-${racerId}`))
+    .filter(p => p != null)
+  if (!positions.length) return null
+  return (positions.reduce((sum, p) => sum + p, 0) / positions.length).toFixed(2)
 })
 
 const notFound = computed(() => !loading.value && driverSeasons.value.length === 0 && allPoints.value.length > 0)

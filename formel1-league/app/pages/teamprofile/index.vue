@@ -50,6 +50,14 @@ const teamCards = computed(() => {
     tm.get(teamId).wins += entry.Wins || 0
   })
 
+  // Build per-season team championship positions
+  const seasonTeamStandingsMap = new Map()
+  seasonTeamMap.forEach((tm, season) => {
+    Array.from(tm.entries())
+      .sort(([, a], [, b]) => b.points - a.points || b.wins - a.wins)
+      .forEach(([teamId], i) => seasonTeamStandingsMap.set(`${season}-${teamId}`, i + 1))
+  })
+
   // Map season → champion team ID (constructors')
   const seasonChampionMap = new Map()
   seasonTeamMap.forEach((tm, season) => {
@@ -108,7 +116,15 @@ const teamCards = computed(() => {
   })
 
   return Array.from(statsMap.values())
-    .map(s => ({ ...s, isCurrent: s.seasonsSeen.has('S29') }))
+    .map(s => {
+      const positions = Array.from(s.seasonsSeen)
+        .map(season => seasonTeamStandingsMap.get(`${season}-${s.id}`))
+        .filter(p => p != null)
+      const avgPosition = positions.length
+        ? (positions.reduce((a, b) => a + b, 0) / positions.length).toFixed(1)
+        : null
+      return { ...s, isCurrent: s.seasonsSeen.has('S29'), avgPosition }
+    })
 })
 
 const sortedTeamCards = computed(() => {
@@ -241,13 +257,19 @@ onMounted(fetchData)
             : 'bg-slate-800 hover:bg-slate-700 transition-colors'"
           :style="team.isCurrent ? getCardStyle(team.name) : {}"
         >
-          <div class="mb-3">
+          <div class="mb-3 flex items-start justify-between gap-2">
             <span
               class="text-sm font-bold"
               :class="!(team.isCurrent && teamColors[team.name]) && 'px-2 py-0.5 rounded'"
               :style="!(team.isCurrent && teamColors[team.name]) ? getTeamStyle(team.name) : {}"
             >
               {{ team.name }}
+            </span>
+            <span
+              class="text-xs whitespace-nowrap mt-0.5"
+              :class="team.isCurrent && teamColors[team.name] ? 'opacity-70' : 'text-gray-400'"
+            >
+              Avg Championship Finish <span class="font-bold">{{ team.avgPosition ?? '—' }}</span>
             </span>
           </div>
 
