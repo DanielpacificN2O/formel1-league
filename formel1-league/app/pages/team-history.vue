@@ -19,59 +19,54 @@ const teamEndLabelPlugin = {
   id: 'teamEndLabels',
   afterDraw(chart) {
     const { ctx, chartArea } = chart
-    const lineHeight = 10
+    const rowH = 12
     const labels = []
 
     chart.data.datasets.forEach((dataset, i) => {
       if (dataset.label?.startsWith('__outline__')) return
       const meta = chart.getDatasetMeta(i)
       if (meta.hidden) return
-
       let lastIndex = -1
       for (let j = dataset.data.length - 1; j >= 0; j--) {
         if (dataset.data[j] != null) { lastIndex = j; break }
       }
       if (lastIndex === -1) return
-
       const point = meta.data[lastIndex]
-      labels.push({
-        x: point.x + 6,
-        y: point.y,
-        originY: point.y,
-        text: `${dataset.label} ${dataset.data[lastIndex]}`,
-        color: dataset.borderColor,
-        primaryColor: dataset._primaryColor || dataset.borderColor,
-      })
+      const breakdown = dataset._teamBreakdown || [{
+        name: dataset.label,
+        total: dataset.data[lastIndex],
+        primary: dataset.borderColor,
+        secondary: dataset.borderColor,
+      }]
+      labels.push({ x: point.x + 6, y: point.y, originY: point.y, breakdown, h: rowH })
     })
 
     labels.sort((a, b) => a.y - b.y)
-
-    const top = chartArea.top
-    const bottom = chartArea.bottom
     const n = labels.length
     if (!n) return
 
     for (let pass = 0; pass < 10; pass++) {
       for (let i = 1; i < n; i++) {
-        const gap = labels[i].y - labels[i - 1].y
-        if (gap < lineHeight) {
-          const half = (lineHeight - gap) / 2
-          labels[i - 1].y -= half
-          labels[i].y += half
+        const prevBot = labels[i-1].y + labels[i-1].h / 2
+        const curTop  = labels[i  ].y - labels[i  ].h / 2
+        if (curTop < prevBot) {
+          const half = (prevBot - curTop) / 2
+          labels[i-1].y -= half
+          labels[i  ].y += half
         }
       }
-      if (labels[0].y < top) {
-        labels[0].y = top
+      if (labels[0].y - labels[0].h/2 < chartArea.top) {
+        labels[0].y = chartArea.top + labels[0].h/2
         for (let i = 1; i < n; i++) {
-          if (labels[i].y - labels[i - 1].y < lineHeight)
-            labels[i].y = labels[i - 1].y + lineHeight
+          const min = labels[i-1].y + labels[i-1].h/2
+          if (labels[i].y - labels[i].h/2 < min) labels[i].y = min + labels[i].h/2
         }
       }
-      if (labels[n - 1].y > bottom) {
-        labels[n - 1].y = bottom
-        for (let i = n - 2; i >= 0; i--) {
-          if (labels[i + 1].y - labels[i].y < lineHeight)
-            labels[i].y = labels[i + 1].y - lineHeight
+      if (labels[n-1].y + labels[n-1].h/2 > chartArea.bottom) {
+        labels[n-1].y = chartArea.bottom - labels[n-1].h/2
+        for (let i = n-2; i >= 0; i--) {
+          const max = labels[i+1].y - labels[i+1].h/2
+          if (labels[i].y + labels[i].h/2 > max) labels[i].y = max - labels[i].h/2
         }
       }
     }
@@ -79,28 +74,48 @@ const teamEndLabelPlugin = {
     ctx.save()
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
+    ctx.font = '600 9px sans-serif'
     ctx.lineWidth = 1
 
-    labels.forEach(({ x, y, originY, text, color, primaryColor }) => {
+    labels.forEach(({ x, y, originY, breakdown, h }) => {
+      const refColor = breakdown[breakdown.length - 1].secondary
       if (Math.abs(y - originY) > 2) {
         ctx.beginPath()
-        ctx.strokeStyle = color + '99'
+        ctx.strokeStyle = refColor + '99'
         ctx.setLineDash([2, 3])
         ctx.moveTo(x - 2, originY)
         ctx.lineTo(x - 2, y)
         ctx.stroke()
         ctx.setLineDash([])
       }
-      ctx.font = '600 10px sans-serif'
-      const pad = { x: 3, y: 1 }
-      const bh = 12
-      const bw = ctx.measureText(text).width + pad.x * 2
-      ctx.fillStyle = primaryColor
-      ctx.beginPath()
-      ctx.roundRect(x - pad.x, y - bh / 2, bw, bh, 3)
-      ctx.fill()
-      ctx.fillStyle = color
-      ctx.fillText(text, x, y)
+
+      const pad = 4
+      const gap = 1
+      const pills = breakdown
+        .filter(t => t.selected !== false)
+        .map(t => {
+          const text = `${t.name} ${t.total}`
+          return { ...t, text, w: ctx.measureText(text).width + pad * 2 }
+        })
+      if (!pills.length) return
+      const top = y - rowH / 2
+      let xCur = x - pad
+
+      pills.forEach((pill, pi) => {
+        const isFirst = pi === 0
+        const isLast  = pi === pills.length - 1
+        const radii   = pills.length === 1 ? 3
+                      : isFirst ? [3, 0, 0, 3]
+                      : isLast  ? [0, 3, 3, 0]
+                      : 0
+        ctx.fillStyle = pill.selected ? pill.primary : '#374151'
+        ctx.beginPath()
+        ctx.roundRect(xCur, top, pill.w, rowH, radii)
+        ctx.fill()
+        ctx.fillStyle = pill.selected ? pill.secondary : '#6b7280'
+        ctx.fillText(pill.text, xCur + pad, y)
+        xCur += pill.w + gap
+      })
     })
     ctx.restore()
 
@@ -190,6 +205,19 @@ const TEAM_COLORS = {
   'arrows':        { primary: '#cccccc', secondary: '#cc5500' },
 }
 
+const LINEAGES = [
+  { id: 'ferrari',    teams: ['Ferrari'] },
+  { id: 'mclaren',    teams: ['McLaren'] },
+  { id: 'williams',   teams: ['Williams'] },
+  { id: 'lotus',      teams: ['Lotus-Renault'] },
+  { id: 'mercedes',   teams: ['Tyrrell', 'Honda', 'Mercedes'] },
+  { id: 'bwt',        teams: ['Brabham', 'Petronas', 'BMW', 'Force India', 'BWT'] },
+  { id: 'redbull',    teams: ['Shadow', 'Benetton', 'Jaguar', 'Red Bull'] },
+  { id: 'strminardi', teams: ['Surtees', 'Minardi', 'STR-Minardi'] },
+  { id: 'caterham',   teams: ['March', 'Arrows', 'Jordan', 'Super Aguri', 'Caterham-Jordan'] },
+  { id: 'sauber',     teams: ['Embassy Hill', 'Ligier', 'Toyota', 'Sauber'] },
+]
+
 function getTeamColors(name) {
   const key = name?.toLowerCase() ?? ''
   const entries = Object.entries(TEAM_COLORS).sort((a, b) => b[0].length - a[0].length)
@@ -266,6 +294,45 @@ const teamSeasonStats = computed(() => {
   return map
 })
 
+const teamNameToId = computed(() => {
+  const map = new Map()
+  teamSeasonStats.value.forEach((data, id) => map.set(data.name, id))
+  return map
+})
+
+const resolvedLineages = computed(() =>
+  LINEAGES.map(def => {
+    const teams = def.teams
+      .map(name => ({ name, id: teamNameToId.value.get(name) }))
+      .filter(t => t.id != null)
+    const last = teams[teams.length - 1]
+    return {
+      id: def.id,
+      teams,
+      label: teams.map(t => t.name).join(' · '),
+      primaryColor:   last ? teamColorMap.value.get(last.id)          : '#666666',
+      secondaryColor: last ? teamSecondaryColorMap.value.get(last.id) : '#ffffff',
+    }
+  })
+)
+
+
+const allLineages = computed(() => {
+  const totals = new Map()
+  resolvedLineages.value.forEach(lineage => {
+    let total = 0
+    lineage.teams.forEach(team => {
+      teamSeasonStats.value.get(team.id)?.seasons.forEach((stats, season) => {
+        total += selectedStat.value === 'Championships'
+          ? (seasonChampionTeam.value.get(season)?.teamId === team.id ? 1 : 0)
+          : stats[selectedStat.value] || 0
+      })
+    })
+    totals.set(lineage.id, total)
+  })
+  return [...resolvedLineages.value].sort((a, b) => (totals.get(b.id) || 0) - (totals.get(a.id) || 0))
+})
+
 function statValue(teamId, season) {
   if (selectedStat.value === 'Championships') {
     return seasonChampionTeam.value.get(season)?.teamId === teamId ? 1 : 0
@@ -273,7 +340,7 @@ function statValue(teamId, season) {
   return teamSeasonStats.value.get(teamId)?.seasons.get(season)?.[selectedStat.value] || 0
 }
 
-// Stable list of teams sorted by all-time total
+// Stable list of teams sorted by all-time total (kept for color map stability)
 const allTeams = computed(() => {
   const totals = new Map()
   teamSeasonStats.value.forEach((data, teamId) => {
@@ -313,33 +380,9 @@ const teamSecondaryColorMap = computed(() => {
 })
 
 watch(allTeams, (teams) => {
-  if (selectedTeamIds.value.length === 0) {
+  if (selectedTeamIds.value.length === 0)
     selectedTeamIds.value = teams.map(t => t.id)
-  }
 }, { immediate: true })
-
-// Cumulative totals up to hovered season
-const teamTotalsAtHover = computed(() => {
-  const upTo = hoveredSeasonIndex.value !== null ? hoveredSeasonIndex.value : seasonList.length - 1
-  const totals = new Map()
-  teamSeasonStats.value.forEach((data, teamId) => {
-    let total = 0
-    data.seasons.forEach((stats, season) => {
-      if (seasonList.indexOf(season) > upTo) return
-      total += selectedStat.value === 'Championships'
-        ? (seasonChampionTeam.value.get(season)?.teamId === teamId ? 1 : 0)
-        : stats[selectedStat.value] || 0
-    })
-    totals.set(teamId, total)
-  })
-  return totals
-})
-
-const sortedTeams = computed(() =>
-  [...allTeams.value].sort((a, b) =>
-    (teamTotalsAtHover.value.get(b.id) || 0) - (teamTotalsAtHover.value.get(a.id) || 0)
-  )
-)
 
 const hoveredSeasonLabel = computed(() =>
   hoveredSeasonIndex.value !== null
@@ -347,49 +390,148 @@ const hoveredSeasonLabel = computed(() =>
     : null
 )
 
-const chartData = computed(() => {
-  const teamsToShow = allTeams.value.filter(t => selectedTeamIds.value.includes(t.id))
+const sidebarTeams = computed(() => {
+  const teamTotals = new Map()
+  teamSeasonStats.value.forEach((data, teamId) => {
+    let total = 0
+    data.seasons.forEach((stats, season) => {
+      total += selectedStat.value === 'Championships'
+        ? (seasonChampionTeam.value.get(season)?.teamId === teamId ? 1 : 0)
+        : stats[selectedStat.value] || 0
+    })
+    teamTotals.set(teamId, total)
+  })
 
+  const currentTeams = allTeams.value
+    .filter(t => teamSeasonStats.value.get(t.id)?.seasons.has('S29'))
+    .sort((a, b) => (teamTotals.get(b.id) || 0) - (teamTotals.get(a.id) || 0))
+    .map(t => ({ ...t, isCurrent: true }))
+
+  const usedIds = new Set(currentTeams.map(t => t.id))
+
+  const formerTeams = []
+  currentTeams.forEach(current => {
+    const lineage = resolvedLineages.value.find(l => l.teams.some(t => t.id === current.id))
+    if (!lineage) return
+    lineage.teams
+      .filter(t => t.id != null && !usedIds.has(t.id))
+      .sort((a, b) => (teamTotals.get(b.id) || 0) - (teamTotals.get(a.id) || 0))
+      .forEach(t => {
+        formerTeams.push({ id: t.id, name: t.name, isCurrent: false })
+        usedIds.add(t.id)
+      })
+  })
+
+  allTeams.value
+    .filter(t => !usedIds.has(t.id))
+    .forEach(t => formerTeams.push({ id: t.id, name: t.name, isCurrent: false }))
+
+  return [...currentTeams, ...formerTeams]
+})
+
+const chartData = computed(() => {
+  const lineagesToShow = allLineages.value.filter(l =>
+    l.teams.some(t => selectedTeamIds.value.includes(t.id))
+  )
   const outlineDatasets = []
   const mainDatasets = []
 
-  teamsToShow.forEach(team => {
-    const seasonData = teamSeasonStats.value.get(team.id)?.seasons
-    const primary = teamColorMap.value.get(team.id)
-    const secondary = teamSecondaryColorMap.value.get(team.id)
+  lineagesToShow.forEach(lineage => {
+    // Which team (by id) is active at each season index
+    const teamAtIndex = seasonList.map(s => {
+      for (const team of lineage.teams) {
+        if (teamSeasonStats.value.get(team.id)?.seasons.has(s)) return team.id
+      }
+      return null
+    })
 
-    let firstActive = -1
-    let lastActive = -1
-    seasonList.forEach((s, idx) => {
-      if (seasonData?.has(s)) {
-        if (firstActive === -1) firstActive = idx
-        lastActive = idx
+    let firstActive = -1, lastActive = -1
+    teamAtIndex.forEach((tid, idx) => {
+      if (tid != null) { if (firstActive === -1) firstActive = idx; lastActive = idx }
+    })
+    if (firstActive === -1) return
+
+    const lastTeamId = teamAtIndex[lastActive]
+    const lastPrimary   = teamColorMap.value.get(lastTeamId)   || '#666666'
+    const lastSecondary = teamSecondaryColorMap.value.get(lastTeamId) || '#ffffff'
+
+    // Combined cumulative values
+    let cumulative = 0
+    const cumulativeData = seasonList.map((s, idx) => {
+      if (idx < firstActive) return null
+      const activeId = teamAtIndex[idx]
+      if (activeId != null && selectedTeamIds.value.includes(activeId)) {
+        const stat = selectedStat.value === 'Championships'
+          ? (seasonChampionTeam.value.get(s)?.teamId === activeId ? 1 : 0)
+          : teamSeasonStats.value.get(activeId)?.seasons.get(s)?.[selectedStat.value] || 0
+        cumulative += stat
+      }
+      return cumulative
+    })
+
+    // Per-team stat breakdown for the end label
+    const teamBreakdown = lineage.teams.map(team => {
+      let total = 0
+      teamSeasonStats.value.get(team.id)?.seasons.forEach((stats, season) => {
+        total += selectedStat.value === 'Championships'
+          ? (seasonChampionTeam.value.get(season)?.teamId === team.id ? 1 : 0)
+          : stats[selectedStat.value] || 0
+      })
+      return {
+        name: team.name,
+        total,
+        primary:   teamColorMap.value.get(team.id)          || '#4b5563',
+        secondary: teamSecondaryColorMap.value.get(team.id) || '#ffffff',
+        selected:  selectedTeamIds.value.includes(team.id),
       }
     })
 
+    // Championship seasons for any team in this lineage
     const championshipIndices = seasonList.reduce((acc, s, idx) => {
-      if (seasonChampionTeam.value.get(s)?.teamId === team.id) acc.push(idx)
+      const winner = seasonChampionTeam.value.get(s)?.teamId
+      if (lineage.teams.some(t => t.id === winner)) acc.push(idx)
       return acc
     }, [])
 
-    let cumulative = 0
-    let lastCumulative = 0
-    const cumulativeData = seasonList.map((s, idx) => {
-      if (idx < firstActive) return null
-      const val = statValue(team.id, s)
-      if (seasonData?.has(s)) {
-        cumulative += val
-        lastCumulative = cumulative
-        return cumulative
+    const segBorderColor_outline = ctx => {
+      const p0Id = teamAtIndex[ctx.p0DataIndex]
+      const p1Id = teamAtIndex[ctx.p1DataIndex]
+      if (ctx.p0DataIndex >= lastActive)
+        return (teamColorMap.value.get(p0Id ?? lastTeamId) || '#666666') + '44'
+      if (p0Id != null && !selectedTeamIds.value.includes(p0Id)) return '#6b7280'
+      if (p0Id !== p1Id) {
+        if (p1Id != null && !selectedTeamIds.value.includes(p1Id)) return '#6b7280'
+        return teamColorMap.value.get(p1Id) || '#666666'
       }
-      return lastCumulative
-    })
+      return teamColorMap.value.get(p0Id) || '#666666'
+    }
 
-    // Thick primary-colour outline (outer layer)
+    const segBorderColor_main = ctx => {
+      const p0Id = teamAtIndex[ctx.p0DataIndex]
+      const p1Id = teamAtIndex[ctx.p1DataIndex]
+      if (ctx.p0DataIndex >= lastActive)
+        return (teamSecondaryColorMap.value.get(p0Id ?? lastTeamId) || '#ffffff') + '77'
+      if (p0Id != null && !selectedTeamIds.value.includes(p0Id)) return '#9ca3af'
+      if (p0Id !== p1Id) {
+        if (p1Id != null && !selectedTeamIds.value.includes(p1Id)) return '#9ca3af'
+        return teamSecondaryColorMap.value.get(p1Id) || '#ffffff'
+      }
+      return teamSecondaryColorMap.value.get(p0Id) || '#ffffff'
+    }
+
+    const segBorderDash = ctx => {
+      const p0Id = teamAtIndex[ctx.p0DataIndex]
+      const p1Id = teamAtIndex[ctx.p1DataIndex]
+      if (ctx.p0DataIndex >= lastActive) return [6, 4]
+      if (p0Id != null && !selectedTeamIds.value.includes(p0Id)) return [4, 4]
+      if (p0Id !== p1Id && p1Id != null && !selectedTeamIds.value.includes(p1Id)) return [4, 4]
+      return undefined
+    }
+
     outlineDatasets.push({
-      label: `__outline__${team.name}`,
+      label: `__outline__${lineage.label}`,
       data: cumulativeData,
-      borderColor: primary,
+      borderColor: lastPrimary,
       backgroundColor: 'transparent',
       borderWidth: 9,
       order: 1,
@@ -401,31 +543,30 @@ const chartData = computed(() => {
       championshipIndices: [],
       lastActiveIndex: lastActive,
       segment: {
-        borderDash: ctx => ctx.p0DataIndex >= lastActive ? [6, 4] : undefined,
-        borderColor: ctx => ctx.p0DataIndex >= lastActive ? primary + '44' : primary,
+        borderColor: segBorderColor_outline,
+        borderDash: segBorderDash,
         borderWidth: ctx => ctx.p0DataIndex >= lastActive ? 4 : 9,
       },
     })
 
-    // Secondary-colour line on top (inner layer)
     mainDatasets.push({
-      label: team.name,
+      label: lineage.label,
       data: cumulativeData,
-      borderColor: secondary,
-      backgroundColor: primary + '33',
+      borderColor: lastSecondary,
+      backgroundColor: lastPrimary + '33',
       borderWidth: 2,
       order: 0,
-      _primaryColor: primary,
       tension: 0,
       spanGaps: true,
       clip: false,
       championshipIndices,
       lastActiveIndex: lastActive,
+      _teamBreakdown: teamBreakdown,
       pointRadius: seasonList.map((_, idx) => idx <= lastActive ? 4 : 0),
       pointHoverRadius: seasonList.map((_, idx) => idx <= lastActive ? 6 : 0),
       segment: {
-        borderDash: ctx => ctx.p0DataIndex >= lastActive ? [6, 4] : undefined,
-        borderColor: ctx => ctx.p0DataIndex >= lastActive ? secondary + '77' : secondary,
+        borderColor: segBorderColor_main,
+        borderDash: segBorderDash,
         borderWidth: ctx => ctx.p0DataIndex >= lastActive ? 1 : 2,
       },
     })
@@ -440,7 +581,7 @@ const chartData = computed(() => {
 const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
-  layout: { padding: { right: 160 } },
+  layout: { padding: { right: 320 } },
   hover: { mode: 'index', intersect: false },
   onHover: (event, activeElements) => {
     hoveredSeasonIndex.value = activeElements.length > 0 ? activeElements[0].index : null
@@ -476,15 +617,13 @@ const chartOptions = computed(() => ({
 }))
 
 function toggleTeam(id) {
-  if (selectedTeamIds.value.includes(id)) {
-    selectedTeamIds.value = selectedTeamIds.value.filter(t => t !== id)
-  } else {
-    selectedTeamIds.value = [...selectedTeamIds.value, id]
-  }
+  selectedTeamIds.value = selectedTeamIds.value.includes(id)
+    ? selectedTeamIds.value.filter(t => t !== id)
+    : [...selectedTeamIds.value, id]
 }
 
 function selectAll() { selectedTeamIds.value = allTeams.value.map(t => t.id) }
-function clearAll() { selectedTeamIds.value = [] }
+function clearAll()  { selectedTeamIds.value = [] }
 function selectCurrent() {
   selectedTeamIds.value = allTeams.value
     .filter(t => teamSeasonStats.value.get(t.id)?.seasons.has('S29'))
@@ -540,19 +679,33 @@ onMounted(() => getData())
                 <button @click="clearAll" class="text-xs text-gray-400 hover:text-gray-300 transition-colors">None</button>
               </div>
             </div>
-            <div class="flex flex-col gap-1.5 overflow-y-auto">
+            <div class="flex flex-col gap-1 overflow-y-auto">
+              <span class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold pb-0.5">Current</span>
               <button
-                v-for="team in sortedTeams"
+                v-for="team in sidebarTeams.filter(t => t.isCurrent)"
                 :key="team.id"
                 @click="toggleTeam(team.id)"
-                class="px-2.5 py-1 rounded text-xs font-medium transition-colors border text-left"
+                class="px-2 py-0.5 rounded text-[11px] font-medium transition-colors border text-left"
                 :class="selectedTeamIds.includes(team.id)
                   ? 'border-transparent'
                   : 'border-slate-600 bg-transparent text-gray-500 hover:text-gray-300'"
-                :style="selectedTeamIds.includes(team.id) ? `background-color: ${teamColorMap.get(team.id)}; color: ${teamSecondaryColorMap.get(team.id)}` : ''"
-              >
-                {{ team.name }}
-              </button>
+                :style="selectedTeamIds.includes(team.id)
+                  ? `background-color: ${teamColorMap.get(team.id)}; color: ${teamSecondaryColorMap.get(team.id)}`
+                  : ''"
+              >{{ team.name }}</button>
+              <span class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold pt-2 pb-0.5">Former</span>
+              <button
+                v-for="team in sidebarTeams.filter(t => !t.isCurrent)"
+                :key="team.id"
+                @click="toggleTeam(team.id)"
+                class="px-2 py-0.5 rounded text-[11px] font-medium transition-colors border text-left"
+                :class="selectedTeamIds.includes(team.id)
+                  ? 'border-transparent'
+                  : 'border-slate-600 bg-transparent text-gray-500 hover:text-gray-300'"
+                :style="selectedTeamIds.includes(team.id)
+                  ? `background-color: ${teamColorMap.get(team.id)}; color: ${teamSecondaryColorMap.get(team.id)}`
+                  : ''"
+              >{{ team.name }}</button>
             </div>
           </div>
 
