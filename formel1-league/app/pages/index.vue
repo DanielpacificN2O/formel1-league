@@ -138,6 +138,15 @@ const seasonHD = computed(() => {
   })
 })
 
+const seasonDriverTeam = computed(() => {
+  const map = new Map()
+  seasonHD.value.forEach(entry => {
+    if (entry.Racer?.id && entry.Team?.TeamName)
+      map.set(entry.Racer.id, entry.Team.TeamName)
+  })
+  return map
+})
+
 // Fetch racers for dropdown
 async function getRacers() {
   try {
@@ -430,6 +439,52 @@ function getTeamStyle(teamName) {
     : { backgroundColor: '#4b5563', color: '#ffffff' }
 }
 
+const teamAbbreviations = {
+  'Ferrari':         'FER',
+  'McLaren':         'MCL',
+  'Williams':        'WIL',
+  'Lotus-Renault':   'LOT',
+  'Tyrrell':         'TYR',
+  'Brabham':         'BRA',
+  'Benetton':        'BEN',
+  'Shadow':          'SHA',
+  'March':           'MAR',
+  'Surtees':         'SUR',
+  'Embassy Hill':    'EMB',
+  'Arrows':          'ARR',
+  'Ligier':          'LIG',
+  'Jordan':          'JOR',
+  'Minardi':         'MIN',
+  'STR-Minardi':     'SMI',
+  'Caterham-Jordan': 'CAT',
+  'Petronas':        'PET',
+  'Jaguar':          'JAG',
+  'Honda':           'HON',
+  'Toyota':          'TOY',
+  'Super Aguri':     'SAG',
+  'BMW':             'BMW',
+  'Red Bull':        'RBR',
+  'Force India':     'FOR',
+  'Mercedes':        'MER',
+  'Sauber':          'SAU',
+  'BWT':             'BWT',
+}
+
+function getTeamDisplayName(teamName, season) {
+  if (teamName === 'Lotus-Renault') {
+    if (['S01','S02','S03','S04'].includes(season)) return 'Lotus'
+    if (['S15','S16','S17','S18','S19','S20','S21'].includes(season)) return 'Renault'
+  }
+  return teamName
+}
+
+function getTeamAbbr(teamName, season) {
+  if (teamName === 'Lotus-Renault' && ['S15','S16','S17','S18','S19','S20','S21'].includes(season)) {
+    return 'REN'
+  }
+  return teamAbbreviations[teamName] ?? teamName.slice(0, 3).toUpperCase()
+}
+
 async function getRaceResults() {
   const { data, error } = await supabase
     .from('RaceResults')
@@ -585,7 +640,7 @@ onMounted(() => {
                   </td>
                   <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-white">{{ item.Racer?.Name || 'N/A' }}</td>
                   <td class="px-4 py-2 whitespace-nowrap">
-                    <span v-if="item.Team" class="px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap" :style="getTeamStyle(item.Team.TeamName)">{{ item.Team.TeamName }}</span>
+                    <span v-if="item.Team" class="px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap" :style="getTeamStyle(item.Team.TeamName)">{{ getTeamDisplayName(item.Team.TeamName, chosenSeason) }}</span>
                     <span v-else class="text-sm text-gray-300">N/A</span>
                   </td>
                   <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-300">{{ item.Points }}</td>
@@ -627,7 +682,7 @@ onMounted(() => {
                       }">{{ index + 1 }}</span>
                   </td>
                   <td class="px-6 py-4">
-                    <span class="px-2 py-0.5 rounded text-sm font-semibold whitespace-nowrap" :style="getTeamStyle(team.TeamName)">{{ team.TeamName }}</span>
+                    <span class="px-2 py-0.5 rounded text-sm font-semibold whitespace-nowrap" :style="getTeamStyle(team.TeamName)">{{ getTeamDisplayName(team.TeamName, chosenSeason) }}</span>
                   </td>
                   <td class="px-6 py-4 text-gray-300 font-semibold">{{ team.totalPoints }}</td>
                   <td class="px-6 py-4 text-gray-300">{{ team.totalPoles }}</td>
@@ -670,15 +725,21 @@ onMounted(() => {
                   <div class="text-xs font-medium text-white">{{ item.GrandPrix }}</div>
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap text-center">
-                  <div class="text-xs font-medium text-white">{{ item.Polesitter?.Name || '—' }}</div>
-                  <span v-if="item.PolesitterTeam" class="px-1 py-0 rounded text-[10px] font-semibold whitespace-nowrap" :style="getTeamStyle(item.PolesitterTeam.TeamName)">{{ item.PolesitterTeam.TeamName }}</span>
+                  <div class="text-xs font-medium text-gray-300">{{ item.Polesitter?.Name || '—' }}</div>
+                  <span v-if="item.PolesitterTeam" class="px-1 py-0 rounded text-[10px] font-semibold whitespace-nowrap" :style="getTeamStyle(item.PolesitterTeam.TeamName)">{{ getTeamAbbr(item.PolesitterTeam.TeamName, item.Season?.Season) }}</span>
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap text-center">
                   <div class="text-sm font-medium text-white">{{ item.Winner?.Name || '—' }}</div>
-                  <span v-if="item.WinnerTeam" class="px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap" :style="getTeamStyle(item.WinnerTeam.TeamName)">{{ item.WinnerTeam.TeamName }}</span>
+                  <span v-if="item.WinnerTeam" class="px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap" :style="getTeamStyle(item.WinnerTeam.TeamName)">{{ getTeamDisplayName(item.WinnerTeam.TeamName, item.Season?.Season) }}</span>
                 </td>
-                <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-300 text-center">{{ item.P2?.Name || '—' }}</td>
-                <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-300 text-center">{{ item.P3?.Name || '—' }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-center">
+                  <div class="text-xs text-gray-300">{{ item.P2?.Name || '—' }}</div>
+                  <span v-if="item.P2?.id && seasonDriverTeam.get(item.P2.id)" class="px-1 py-0 rounded text-[10px] font-semibold whitespace-nowrap" :style="getTeamStyle(seasonDriverTeam.get(item.P2.id))">{{ getTeamAbbr(seasonDriverTeam.get(item.P2.id), item.Season?.Season) }}</span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-center">
+                  <div class="text-xs text-gray-300">{{ item.P3?.Name || '—' }}</div>
+                  <span v-if="item.P3?.id && seasonDriverTeam.get(item.P3.id)" class="px-1 py-0 rounded text-[10px] font-semibold whitespace-nowrap" :style="getTeamStyle(seasonDriverTeam.get(item.P3.id))">{{ getTeamAbbr(seasonDriverTeam.get(item.P3.id), item.Season?.Season) }}</span>
+                </td>
               </tr>
             </tbody>
           </table>
