@@ -24,27 +24,7 @@ const toggleMobileMenu = () => {
           >
             Standings
           </NuxtLink>
-          <NuxtLink
-            to="/driverstandings"
-            class="text-gray-300 hover:text-white transition-colors"
-            active-class="text-white font-semibold"
-          >
-            Driver Standings
-          </NuxtLink>
-          <NuxtLink
-            to="/teams"
-            class="text-gray-300 hover:text-white transition-colors"
-            active-class="text-white font-semibold"
-          >
-            Team Standings
-          </NuxtLink>
-          <NuxtLink
-            to="/race-results"
-            class="text-gray-300 hover:text-white transition-colors"
-            active-class="text-white font-semibold"
-          >
-            Race Results
-          </NuxtLink>
+          
           
           
           <NuxtLink

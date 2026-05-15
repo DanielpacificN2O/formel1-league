@@ -404,7 +404,10 @@ onMounted(() => {
     <Hero/>
     <Navbar />
     
-    <div class="container mx-auto px-4 py-8"> 
+    <div class="container mx-auto px-4 py-8">
+      <div class="mb-4">
+        <NuxtLink to="/" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors">← Standings</NuxtLink>
+      </div>
       <div class="flex flex-wrap gap-3 justify-between items-center mb-6">
         <h2 class="text-2xl font-bold">Season Standings</h2>
         <div class="flex flex-wrap gap-2">
