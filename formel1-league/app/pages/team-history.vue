@@ -92,7 +92,7 @@ const teamEndLabelPlugin = {
       const pad = 4
       const gap = 1
       const pills = breakdown
-        .filter(t => t.selected !== false)
+        .filter(t => t.selected !== false && t.activeInGen !== false)
         .map(t => {
           const text = `${t.name} ${t.total}`
           return { ...t, text, w: ctx.measureText(text).width + pad * 2 }
@@ -165,6 +165,16 @@ const seasonList = [
   "S11","S12","S13","S14","S15","S16","S17","S18","S19","S20",
   "S21","S22","S23","S24","S25","S26","S27","S28","S29"
 ]
+
+const GENERATIONS = [
+  { id: 'gen1', label: 'Gen 1', seasons: ['S01','S02','S03','S04'] },
+  { id: 'gen2', label: 'Gen 2', seasons: ['S05','S06','S07','S08','S09'] },
+  { id: 'gen3', label: 'Gen 3', seasons: ['S10','S11','S12','S13','S14'] },
+  { id: 'gen4', label: 'Gen 4', seasons: ['S15','S16','S17','S18','S19','S20','S21'] },
+  { id: 'gen5', label: 'Gen 5', seasons: ['S22','S23','S24','S25'] },
+  { id: 'gen6', label: 'Gen 6', seasons: ['S26','S27','S28','S29'] },
+]
+const selectedGenIds = ref(GENERATIONS.map(g => g.id))
 
 const COLORS = [
   '#3b82f6','#ef4444','#10b981','#f59e0b','#8b5cf6',
@@ -386,9 +396,39 @@ watch(allTeams, (teams) => {
 
 const hoveredSeasonLabel = computed(() =>
   hoveredSeasonIndex.value !== null
-    ? `S${parseInt(seasonList[hoveredSeasonIndex.value].replace('S', ''), 10)}`
+    ? `S${parseInt(activeSeasonsOrdered.value[hoveredSeasonIndex.value]?.replace('S', '') ?? '0', 10)}`
     : null
 )
+
+const activeSeasonsOrdered = computed(() => {
+  const activeSet = new Set(
+    GENERATIONS.filter(g => selectedGenIds.value.includes(g.id)).flatMap(g => g.seasons)
+  )
+  return seasonList.filter(s => activeSet.has(s))
+})
+
+const gapAfterIndex = computed(() => {
+  const gaps = new Set()
+  const seasons = activeSeasonsOrdered.value
+  const seasonToGenIdx = new Map()
+  GENERATIONS.forEach((g, gi) => g.seasons.forEach(s => seasonToGenIdx.set(s, gi)))
+  for (let i = 0; i < seasons.length - 1; i++) {
+    if (seasonToGenIdx.get(seasons[i + 1]) - seasonToGenIdx.get(seasons[i]) > 1)
+      gaps.add(i)
+  }
+  return gaps
+})
+
+const teamsWithDataInActiveGens = computed(() => {
+  const activeSet = new Set(activeSeasonsOrdered.value)
+  const ids = new Set()
+  teamSeasonStats.value.forEach((data, teamId) => {
+    for (const season of data.seasons.keys()) {
+      if (activeSet.has(season)) { ids.add(teamId); break }
+    }
+  })
+  return ids
+})
 
 const sidebarTeams = computed(() => {
   const teamTotals = new Map()
@@ -403,7 +443,7 @@ const sidebarTeams = computed(() => {
   })
 
   const currentTeams = allTeams.value
-    .filter(t => teamSeasonStats.value.get(t.id)?.seasons.has('S29'))
+    .filter(t => teamSeasonStats.value.get(t.id)?.seasons.has('S29') && teamsWithDataInActiveGens.value.has(t.id))
     .sort((a, b) => (teamTotals.get(b.id) || 0) - (teamTotals.get(a.id) || 0))
     .map(t => ({ ...t, isCurrent: true }))
 
@@ -414,7 +454,7 @@ const sidebarTeams = computed(() => {
     const lineage = resolvedLineages.value.find(l => l.teams.some(t => t.id === current.id))
     if (!lineage) return
     lineage.teams
-      .filter(t => t.id != null && !usedIds.has(t.id))
+      .filter(t => t.id != null && !usedIds.has(t.id) && teamsWithDataInActiveGens.value.has(t.id))
       .sort((a, b) => (teamTotals.get(b.id) || 0) - (teamTotals.get(a.id) || 0))
       .forEach(t => {
         formerTeams.push({ id: t.id, name: t.name, isCurrent: false })
@@ -423,7 +463,7 @@ const sidebarTeams = computed(() => {
   })
 
   allTeams.value
-    .filter(t => !usedIds.has(t.id))
+    .filter(t => !usedIds.has(t.id) && teamsWithDataInActiveGens.value.has(t.id))
     .forEach(t => formerTeams.push({ id: t.id, name: t.name, isCurrent: false }))
 
   return [...currentTeams, ...formerTeams]
@@ -436,9 +476,11 @@ const chartData = computed(() => {
   const outlineDatasets = []
   const mainDatasets = []
 
+  const gaps = gapAfterIndex.value
+
   lineagesToShow.forEach(lineage => {
     // Which team (by id) is active at each season index
-    const teamAtIndex = seasonList.map(s => {
+    const teamAtIndex = activeSeasonsOrdered.value.map(s => {
       for (const team of lineage.teams) {
         if (teamSeasonStats.value.get(team.id)?.seasons.has(s)) return team.id
       }
@@ -457,7 +499,7 @@ const chartData = computed(() => {
 
     // Combined cumulative values
     let cumulative = 0
-    const cumulativeData = seasonList.map((s, idx) => {
+    const cumulativeData = activeSeasonsOrdered.value.map((s, idx) => {
       if (idx < firstActive) return null
       const activeId = teamAtIndex[idx]
       if (activeId != null && selectedTeamIds.value.includes(activeId)) {
@@ -470,9 +512,13 @@ const chartData = computed(() => {
     })
 
     // Per-team stat breakdown for the end label
+    const activeGenSeasonSet = new Set(activeSeasonsOrdered.value)
     const teamBreakdown = lineage.teams.map(team => {
       let total = 0
+      let activeInGen = false
       teamSeasonStats.value.get(team.id)?.seasons.forEach((stats, season) => {
+        if (!activeGenSeasonSet.has(season)) return
+        activeInGen = true
         total += selectedStat.value === 'Championships'
           ? (seasonChampionTeam.value.get(season)?.teamId === team.id ? 1 : 0)
           : stats[selectedStat.value] || 0
@@ -483,17 +529,19 @@ const chartData = computed(() => {
         primary:   teamColorMap.value.get(team.id)          || '#4b5563',
         secondary: teamSecondaryColorMap.value.get(team.id) || '#ffffff',
         selected:  selectedTeamIds.value.includes(team.id),
+        activeInGen,
       }
     })
 
     // Championship seasons for any team in this lineage
-    const championshipIndices = seasonList.reduce((acc, s, idx) => {
+    const championshipIndices = activeSeasonsOrdered.value.reduce((acc, s, idx) => {
       const winner = seasonChampionTeam.value.get(s)?.teamId
       if (lineage.teams.some(t => t.id === winner)) acc.push(idx)
       return acc
     }, [])
 
     const segBorderColor_outline = ctx => {
+      if (gaps.has(ctx.p0DataIndex)) return '#6b728066'
       const p0Id = teamAtIndex[ctx.p0DataIndex]
       const p1Id = teamAtIndex[ctx.p1DataIndex]
       if (ctx.p0DataIndex >= lastActive)
@@ -507,6 +555,7 @@ const chartData = computed(() => {
     }
 
     const segBorderColor_main = ctx => {
+      if (gaps.has(ctx.p0DataIndex)) return '#6b728088'
       const p0Id = teamAtIndex[ctx.p0DataIndex]
       const p1Id = teamAtIndex[ctx.p1DataIndex]
       if (ctx.p0DataIndex >= lastActive)
@@ -520,6 +569,7 @@ const chartData = computed(() => {
     }
 
     const segBorderDash = ctx => {
+      if (gaps.has(ctx.p0DataIndex)) return [5, 5]
       const p0Id = teamAtIndex[ctx.p0DataIndex]
       const p1Id = teamAtIndex[ctx.p1DataIndex]
       if (ctx.p0DataIndex >= lastActive) return [6, 4]
@@ -562,8 +612,8 @@ const chartData = computed(() => {
       championshipIndices,
       lastActiveIndex: lastActive,
       _teamBreakdown: teamBreakdown,
-      pointRadius: seasonList.map((_, idx) => idx <= lastActive ? 4 : 0),
-      pointHoverRadius: seasonList.map((_, idx) => idx <= lastActive ? 6 : 0),
+      pointRadius: activeSeasonsOrdered.value.map((_, idx) => idx <= lastActive ? 4 : 0),
+      pointHoverRadius: activeSeasonsOrdered.value.map((_, idx) => idx <= lastActive ? 6 : 0),
       segment: {
         borderColor: segBorderColor_main,
         borderDash: segBorderDash,
@@ -573,7 +623,7 @@ const chartData = computed(() => {
   })
 
   return {
-    labels: seasonList.map(s => `S${parseInt(s.replace('S', ''), 10)}`),
+    labels: activeSeasonsOrdered.value.map(s => `S${parseInt(s.replace('S', ''), 10)}`),
     datasets: [...outlineDatasets, ...mainDatasets],
   }
 })
@@ -616,6 +666,13 @@ const chartOptions = computed(() => ({
   },
 }))
 
+function toggleGen(id) {
+  if (selectedGenIds.value.includes(id))
+    selectedGenIds.value = selectedGenIds.value.filter(g => g !== id)
+  else
+    selectedGenIds.value = [...selectedGenIds.value, id]
+}
+
 function toggleTeam(id) {
   selectedTeamIds.value = selectedTeamIds.value.includes(id)
     ? selectedTeamIds.value.filter(t => t !== id)
@@ -647,8 +704,9 @@ onMounted(() => getData())
       <p v-if="loading" class="text-gray-400">Loading...</p>
 
       <div v-else>
-        <!-- Stat picker -->
+        <!-- Controls -->
         <div class="flex flex-wrap gap-4 mb-6">
+          <!-- Stat picker -->
           <div class="flex items-center gap-2">
             <span class="text-gray-400 text-sm font-medium">Stat:</span>
             <div class="flex gap-1">
@@ -661,6 +719,27 @@ onMounted(() => getData())
                   ? 'bg-blue-600 text-white'
                   : 'bg-slate-700 text-gray-300 hover:bg-slate-600 hover:text-white'"
               >{{ stat }}</button>
+            </div>
+          </div>
+          <!-- Era picker — pushed right -->
+          <div class="flex flex-col items-end gap-1 ml-auto">
+            <div class="flex items-center gap-2">
+              <span class="text-gray-400 text-sm font-medium">Era:</span>
+              <button @click="selectedGenIds = GENERATIONS.map(g => g.id)"
+                class="text-xs text-blue-400 hover:text-blue-300 transition-colors">All</button>
+              <button @click="selectedGenIds = []"
+                class="text-xs text-gray-400 hover:text-gray-300 transition-colors">None</button>
+            </div>
+            <div class="flex gap-1">
+              <button
+                v-for="gen in GENERATIONS"
+                :key="gen.id"
+                @click="toggleGen(gen.id)"
+                class="px-3 py-1.5 text-xs font-medium rounded transition-colors"
+                :class="selectedGenIds.includes(gen.id)
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-slate-800 text-slate-500 border border-slate-700 hover:text-slate-300'"
+              >{{ gen.label }}</button>
             </div>
           </div>
         </div>
@@ -680,7 +759,7 @@ onMounted(() => getData())
               </div>
             </div>
             <div class="flex flex-col gap-1 overflow-y-auto">
-              <span class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold pb-0.5">Current</span>
+              <span v-if="sidebarTeams.some(t => t.isCurrent)" class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold pb-0.5">Current</span>
               <button
                 v-for="team in sidebarTeams.filter(t => t.isCurrent)"
                 :key="team.id"
@@ -693,7 +772,7 @@ onMounted(() => getData())
                   ? `background-color: ${teamColorMap.get(team.id)}; color: ${teamSecondaryColorMap.get(team.id)}`
                   : ''"
               >{{ team.name }}</button>
-              <span class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold pt-2 pb-0.5">Former</span>
+              <span v-if="sidebarTeams.some(t => !t.isCurrent)" class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold pt-2 pb-0.5">Former</span>
               <button
                 v-for="team in sidebarTeams.filter(t => !t.isCurrent)"
                 :key="team.id"

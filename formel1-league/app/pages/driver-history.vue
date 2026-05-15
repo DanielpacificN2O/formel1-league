@@ -160,6 +160,16 @@ const seasonList = [
   "S21","S22","S23","S24","S25","S26","S27","S28","S29"
 ]
 
+const GENERATIONS = [
+  { id: 'gen1', label: 'Gen 1', seasons: ['S01','S02','S03','S04'] },
+  { id: 'gen2', label: 'Gen 2', seasons: ['S05','S06','S07','S08','S09'] },
+  { id: 'gen3', label: 'Gen 3', seasons: ['S10','S11','S12','S13','S14'] },
+  { id: 'gen4', label: 'Gen 4', seasons: ['S15','S16','S17','S18','S19','S20','S21'] },
+  { id: 'gen5', label: 'Gen 5', seasons: ['S22','S23','S24','S25'] },
+  { id: 'gen6', label: 'Gen 6', seasons: ['S26','S27','S28','S29'] },
+]
+const selectedGenIds = ref(GENERATIONS.map(g => g.id))
+
 const COLORS = [
   '#3b82f6','#ef4444','#10b981','#f59e0b','#8b5cf6',
   '#ec4899','#06b6d4','#84cc16','#f97316','#6366f1',
@@ -284,30 +294,28 @@ watch(allDrivers, (drivers) => {
   }
 }, { immediate: true })
 
-// Cumulative totals up to the hovered season (or all-time if not hovering)
-const driverTotalsAtHover = computed(() => {
-  const upTo = hoveredSeasonIndex.value !== null ? hoveredSeasonIndex.value : seasonList.length - 1
-  const totals = new Map()
-  racerSeasons.value.forEach(entry => {
-    const id = entry.Racer?.id
-    const season = entry.Seasons?.Season
-    if (!id || !season) return
-    if (seasonList.indexOf(season) > upTo) return
-    totals.set(id, (totals.get(id) || 0) + statValue(entry, season))
-  })
-  return totals
+const activeSeasonsOrdered = computed(() => {
+  const activeSet = new Set(
+    GENERATIONS.filter(g => selectedGenIds.value.includes(g.id)).flatMap(g => g.seasons)
+  )
+  return seasonList.filter(s => activeSet.has(s))
 })
 
-// Driver list sorted by hover-season totals — used for filter button order
-const sortedDrivers = computed(() =>
-  [...allDrivers.value].sort((a, b) =>
-    (driverTotalsAtHover.value.get(b.id) || 0) - (driverTotalsAtHover.value.get(a.id) || 0)
-  )
-)
+const gapAfterIndex = computed(() => {
+  const gaps = new Set()
+  const seasons = activeSeasonsOrdered.value
+  const seasonToGenIdx = new Map()
+  GENERATIONS.forEach((g, gi) => g.seasons.forEach(s => seasonToGenIdx.set(s, gi)))
+  for (let i = 0; i < seasons.length - 1; i++) {
+    if (seasonToGenIdx.get(seasons[i + 1]) - seasonToGenIdx.get(seasons[i]) > 1)
+      gaps.add(i)
+  }
+  return gaps
+})
 
 const hoveredSeasonLabel = computed(() =>
   hoveredSeasonIndex.value !== null
-    ? `S${parseInt(seasonList[hoveredSeasonIndex.value].replace('S', ''), 10)}`
+    ? `S${parseInt(activeSeasonsOrdered.value[hoveredSeasonIndex.value]?.replace('S', '') ?? '0', 10)}`
     : null
 )
 
@@ -331,18 +339,24 @@ const chartData = computed(() => {
     const primary = driverColorMap.value.get(driver.id)
     const secondary = driverSecondaryColorMap.value.get(driver.id)
 
+    const activeSeasons = activeSeasonsOrdered.value
+    const gaps = gapAfterIndex.value
+
     let cumulative = 0
-    const cumulativeData = seasonList.map(s => {
+    const cumulativeData = activeSeasons.map(s => {
       const val = seasonData?.get(s)
       if (val == null) return null
       cumulative += val
       return cumulative
     })
 
-    const championshipIndices = seasonList.reduce((acc, s, idx) => {
+    const championshipIndices = activeSeasons.reduce((acc, s, idx) => {
       if (seasonWinners.value.get(s)?.racerId === driver.id) acc.push(idx)
       return acc
     }, [])
+
+    const segmentBorderDash = ctx => gaps.has(ctx.p0DataIndex) ? [5, 5] : undefined
+    const segmentBorderColor = ctx => gaps.has(ctx.p0DataIndex) ? '#6b728066' : undefined
 
     outlineDatasets.push({
       label: `__outline__${driver.name}`,
@@ -357,6 +371,7 @@ const chartData = computed(() => {
       pointHoverRadius: 0,
       clip: false,
       championshipIndices: [],
+      segment: { borderDash: segmentBorderDash, borderColor: segmentBorderColor },
     })
 
     mainDatasets.push({
@@ -373,11 +388,12 @@ const chartData = computed(() => {
       clip: false,
       championshipIndices,
       _primaryColor: primary,
+      segment: { borderDash: segmentBorderDash, borderColor: segmentBorderColor },
     })
   })
 
   return {
-    labels: seasonList.map(s => `S${parseInt(s.replace('S', ''), 10)}`),
+    labels: activeSeasonsOrdered.value.map(s => `S${parseInt(s.replace('S', ''), 10)}`),
     datasets: [...outlineDatasets, ...mainDatasets],
   }
 })
@@ -426,6 +442,13 @@ const chartOptions = computed(() => ({
     },
   },
 }))
+
+function toggleGen(id) {
+  if (selectedGenIds.value.includes(id))
+    selectedGenIds.value = selectedGenIds.value.filter(g => g !== id)
+  else
+    selectedGenIds.value = [...selectedGenIds.value, id]
+}
 
 function toggleDriver(id) {
   if (selectedDriverIds.value.includes(id)) {
@@ -477,6 +500,27 @@ onMounted(() => getData())
               >{{ stat }}</button>
             </div>
           </div>
+          <!-- Era picker — pushed right -->
+          <div class="flex flex-col items-end gap-1 ml-auto">
+            <div class="flex items-center gap-2">
+              <span class="text-gray-400 text-sm font-medium">Era:</span>
+              <button @click="selectedGenIds = GENERATIONS.map(g => g.id)"
+                class="text-xs text-blue-400 hover:text-blue-300 transition-colors">All</button>
+              <button @click="selectedGenIds = []"
+                class="text-xs text-gray-400 hover:text-gray-300 transition-colors">None</button>
+            </div>
+            <div class="flex gap-1">
+              <button
+                v-for="gen in GENERATIONS"
+                :key="gen.id"
+                @click="toggleGen(gen.id)"
+                class="px-3 py-1.5 text-xs font-medium rounded transition-colors"
+                :class="selectedGenIds.includes(gen.id)
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-slate-800 text-slate-500 border border-slate-700 hover:text-slate-300'"
+              >{{ gen.label }}</button>
+            </div>
+          </div>
         </div>
 
         <div class="flex gap-4">
@@ -494,7 +538,7 @@ onMounted(() => getData())
             </div>
             <div class="flex flex-col gap-1.5 overflow-y-auto">
               <button
-                v-for="driver in sortedDrivers"
+                v-for="driver in allDrivers"
                 :key="driver.id"
                 @click="toggleDriver(driver.id)"
                 class="px-2.5 py-1 rounded text-xs font-medium transition-colors border text-left"
