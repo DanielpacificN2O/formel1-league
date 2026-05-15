@@ -369,6 +369,27 @@ const avgChampionshipPosition = computed(() => {
   return calcAvgChampionshipPosition(racerId, uniqueSeasons, seasonStandingsMap.value)
 })
 
+const milestones = computed(() => {
+  const podiums = [...raceWins.value, ...raceP2.value, ...raceP3.value]
+    .filter(r => r.SeasonID != null && r.Round != null)
+    .sort((a, b) => a.SeasonID !== b.SeasonID ? a.SeasonID - b.SeasonID : a.Round - b.Round)
+
+  const fmt = (r) => r ? `Season ${r.Seasons?.Season} - ${r.GrandPrix} - Race ${r.Round}` : null
+
+  return {
+    first: {
+      win:    fmt(raceWins.value[0]),
+      podium: fmt(podiums[0]),
+      pole:   fmt(racePoles.value[0]),
+    },
+    latest: {
+      win:    fmt(raceWins.value[raceWins.value.length - 1]),
+      podium: fmt(podiums[podiums.length - 1]),
+      pole:   fmt(racePoles.value[racePoles.value.length - 1]),
+    },
+  }
+})
+
 const notFound = computed(() => !loading.value && driverSeasons.value.length === 0 && allPoints.value.length > 0)
 
 onMounted(fetchData)
@@ -421,6 +442,28 @@ onMounted(fetchData)
           </div>
           <div v-if="careerTotals.championshipSeasons.length > 0" class="mt-4 text-yellow-400 text-sm">
             🏆 {{ careerTotals.championshipSeasons.sort().join(', ') }}
+          </div>
+        </div>
+
+        <!-- First / Latest milestone cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+          <div v-for="card in [
+            { title: 'First', data: milestones.first },
+            { title: 'Latest', data: milestones.latest },
+          ]" :key="card.title" class="bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700">
+            <div class="bg-slate-700 px-4 py-3 border-b border-slate-600">
+              <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">{{ card.title }}</h3>
+            </div>
+            <div class="p-4 space-y-3">
+              <div v-for="row in [
+                { label: 'Podium', value: card.data.podium },
+                { label: 'Win',    value: card.data.win },
+                { label: 'Pole',   value: card.data.pole },
+              ]" :key="row.label" class="flex items-baseline justify-between gap-3">
+                <span class="text-xs text-gray-500 uppercase tracking-widest flex-none">{{ row.label }}</span>
+                <span class="text-sm text-white text-right">{{ row.value ?? '—' }}</span>
+              </div>
+            </div>
           </div>
         </div>
 

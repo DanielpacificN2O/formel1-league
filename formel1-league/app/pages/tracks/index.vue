@@ -3,12 +3,14 @@ import Navbar from '../components/Navbar.vue';
 import Hero from '../components/Hero.vue';
 import { ref, computed, onMounted } from 'vue'
 import { createClient } from '@supabase/supabase-js'
+import { useScrollRestore } from '~/composables/useScrollRestore'
 
 const config = useRuntimeConfig()
 const supabase = createClient(config.public.supabaseUrl, config.public.supabasePublishableKey)
 
 const allResults = ref([])
 const loading = ref(false)
+useScrollRestore('tracks', loading)
 const sortBy = ref('country')
 
 const trackAliases = {

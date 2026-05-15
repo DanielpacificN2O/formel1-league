@@ -17,15 +17,22 @@ const toggleMobileMenu = () => {
 
         <!-- Desktop Navigation -->
         <div class="hidden md:flex space-x-8">
-          <NuxtLink 
-            to="/" 
+          <NuxtLink
+            to="/"
             class="text-gray-300 hover:text-white transition-colors"
             active-class="text-white font-semibold"
           >
             Standings
           </NuxtLink>
-          <NuxtLink 
-            to="/teams" 
+          <NuxtLink
+            to="/driverstandings"
+            class="text-gray-300 hover:text-white transition-colors"
+            active-class="text-white font-semibold"
+          >
+            Driver Standings
+          </NuxtLink>
+          <NuxtLink
+            to="/teams"
             class="text-gray-300 hover:text-white transition-colors"
             active-class="text-white font-semibold"
           >
@@ -124,6 +131,14 @@ const toggleMobileMenu = () => {
           @click="mobileMenuOpen = false"
         >
           Standings
+        </NuxtLink>
+        <NuxtLink
+          to="/driverstandings"
+          class="block py-2 text-gray-300 hover:text-white transition-colors"
+          active-class="text-white font-semibold"
+          @click="mobileMenuOpen = false"
+        >
+          Driver Standings
         </NuxtLink>
         <NuxtLink
           to="/drivers"

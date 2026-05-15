@@ -194,15 +194,19 @@ const headerStats = computed(() => {
     if (p3) podiumMap.set(p3, (podiumMap.get(p3) || 0) + 1)
   })
 
-  const topWinner = [...winMap.entries()].sort((a, b) => b[1] - a[1])[0]
-  const topPoler = [...poleMap.entries()].sort((a, b) => b[1] - a[1])[0]
-  const topPodium = [...podiumMap.entries()].sort((a, b) => b[1] - a[1])[0]
+  const getTopEntries = (map) => {
+    if (!map.size) return null
+    const sorted = [...map.entries()].sort((a, b) => b[1] - a[1])
+    const topCount = sorted[0][1]
+    const names = sorted.filter(([, c]) => c === topCount).map(([n]) => n)
+    return { names, count: topCount }
+  }
 
   return {
     totalRaces: trackRaces.value.length,
-    topWinner: topWinner ? { name: topWinner[0], count: topWinner[1] } : null,
-    topPoler: topPoler ? { name: topPoler[0], count: topPoler[1] } : null,
-    topPodium: topPodium ? { name: topPodium[0], count: topPodium[1] } : null,
+    topWinner: getTopEntries(winMap),
+    topPoler:  getTopEntries(poleMap),
+    topPodium: getTopEntries(podiumMap),
   }
 })
 
@@ -324,17 +328,17 @@ onMounted(fetchData)
             <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Most Wins</div>
-                <div class="text-xl font-bold text-white leading-tight">{{ headerStats.topWinner?.name || '—' }}</div>
+                <div class="text-xl font-bold text-white leading-tight">{{ headerStats.topWinner?.names.join(', ') || '—' }}</div>
                 <div class="text-sm text-gray-400 mt-0.5">{{ headerStats.topWinner ? `${headerStats.topWinner.count} win${headerStats.topWinner.count > 1 ? 's' : ''}` : '' }}</div>
               </div>
               <div>
                 <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Most Podiums</div>
-                <div class="text-xl font-bold text-white leading-tight">{{ headerStats.topPodium?.name || '—' }}</div>
+                <div class="text-xl font-bold text-white leading-tight">{{ headerStats.topPodium?.names.join(', ') || '—' }}</div>
                 <div class="text-sm text-gray-400 mt-0.5">{{ headerStats.topPodium ? `${headerStats.topPodium.count} podium${headerStats.topPodium.count > 1 ? 's' : ''}` : '' }}</div>
               </div>
               <div>
                 <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Most Poles</div>
-                <div class="text-xl font-bold text-white leading-tight">{{ headerStats.topPoler?.name || '—' }}</div>
+                <div class="text-xl font-bold text-white leading-tight">{{ headerStats.topPoler?.names.join(', ') || '—' }}</div>
                 <div class="text-sm text-gray-400 mt-0.5">{{ headerStats.topPoler ? `${headerStats.topPoler.count} pole${headerStats.topPoler.count > 1 ? 's' : ''}` : '' }}</div>
               </div>
             </div>

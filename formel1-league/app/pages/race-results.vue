@@ -16,7 +16,7 @@ const teams = ref([])
 const raceResults = ref([])
 const seasonDriverTeamMap = ref({})
 const loading = ref(false)
-const chosenSeason = ref('S01')
+const chosenSeason = useSelectedSeason()
 const showModal = ref(false)
 const editMode = ref(false)
 

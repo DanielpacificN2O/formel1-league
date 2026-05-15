@@ -11,7 +11,7 @@ const supabase = createClient(
 )
 
 const racerSeasons = ref([])
-const chosenSeason = ref("S01")
+const chosenSeason = useSelectedSeason()
 const loading = ref(false)
 
 const seasonOptions = [

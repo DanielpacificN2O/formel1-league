@@ -407,6 +407,32 @@ onMounted(() => {
     <div class="container mx-auto px-4 py-8"> 
       <div class="flex flex-wrap gap-3 justify-between items-center mb-6">
         <h2 class="text-2xl font-bold">Season Standings</h2>
+        <div class="flex flex-wrap gap-2">
+          <button 
+            @click="openRacerModal"
+            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            + Add Racer
+          </button>
+          <button 
+            @click="openTeamModal"
+            class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            + Add Team
+          </button>
+          <button 
+            @click="openSeasonModal"
+            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            + Add Season
+          </button>
+          <button 
+            @click="openCreateModal"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            + Add Entry
+          </button>
+        </div>
       </div>
       
       <p v-if="loading" class="text-gray-400">Loading...</p>
@@ -487,6 +513,9 @@ onMounted(() => {
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                 Podiums
               </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-700">
@@ -520,6 +549,20 @@ onMounted(() => {
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                 {{ item.Podiums }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                <button 
+                  @click="openEditModal(item)"
+                  class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded transition-colors"
+                >
+                  Edit
+                </button>
+                <button 
+                  @click="deleteEntry(item.id)"
+                  class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded transition-colors"
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           </tbody>
