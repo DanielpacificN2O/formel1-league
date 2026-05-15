@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar.vue';
 import Hero from '../components/Hero.vue';
 import { ref, computed, onMounted } from 'vue'
 import { createClient } from '@supabase/supabase-js'
+import { buildSeasonStandingsMap, calcAvgChampionshipPosition } from '~/composables/useSeasonStandingsMap'
 
 const config = useRuntimeConfig()
 const supabase = createClient(config.public.supabaseUrl, config.public.supabasePublishableKey)
@@ -338,26 +339,7 @@ const careerTotals = computed(() => {
   return totals
 })
 
-const seasonStandingsMap = computed(() => {
-  const bySeasonMap = new Map()
-  allPoints.value.forEach(entry => {
-    const season = entry.Seasons?.Season
-    const racerId = entry.Racer?.id
-    if (!season || !racerId) return
-    if (!bySeasonMap.has(season)) bySeasonMap.set(season, new Map())
-    const sm = bySeasonMap.get(season)
-    if (!sm.has(racerId)) sm.set(racerId, { racerId, points: 0, wins: 0 })
-    sm.get(racerId).points += entry.Points || 0
-    sm.get(racerId).wins += entry.Wins || 0
-  })
-  const posMap = new Map()
-  bySeasonMap.forEach((sm, season) => {
-    Array.from(sm.values())
-      .sort((a, b) => b.points - a.points || b.wins - a.wins)
-      .forEach((e, i) => posMap.set(`${season}-${e.racerId}`, i + 1))
-  })
-  return posMap
-})
+const seasonStandingsMap = computed(() => buildSeasonStandingsMap(allPoints.value))
 
 const seasonRows = computed(() =>
   driverSeasons.value.map(entry => {
@@ -384,11 +366,7 @@ const avgChampionshipPosition = computed(() => {
       .filter(e => e.Racer?.id === racerId && e.Seasons?.Season)
       .map(e => e.Seasons.Season)
   )]
-  const positions = uniqueSeasons
-    .map(season => seasonStandingsMap.value.get(`${season}-${racerId}`))
-    .filter(p => p != null)
-  if (!positions.length) return null
-  return (positions.reduce((sum, p) => sum + p, 0) / positions.length).toFixed(2)
+  return calcAvgChampionshipPosition(racerId, uniqueSeasons, seasonStandingsMap.value)
 })
 
 const notFound = computed(() => !loading.value && driverSeasons.value.length === 0 && allPoints.value.length > 0)

@@ -8,6 +8,7 @@ const config = useRuntimeConfig()
 const supabase = createClient(config.public.supabaseUrl, config.public.supabasePublishableKey)
 
 const racerSeasons = ref([])
+const driverAvgPositions = ref({})
 const loading = ref(false)
 const sortBy = ref('wins')
 const currentTeamFirst = ref(false)
@@ -15,20 +16,24 @@ const currentTeamFirst = ref(false)
 async function fetchData() {
   loading.value = true
   try {
-    const { data, error } = await supabase
-      .from('Points')
-      .select(`
-        id,
-        Points,
-        Poles,
-        Wins,
-        Podiums,
-        Racer (id, Name),
-        Team (id, TeamName),
-        Seasons (id, Season)
-      `)
+    const [{ data, error }, avgPositions] = await Promise.all([
+      supabase
+        .from('Points')
+        .select(`
+          id,
+          Points,
+          Poles,
+          Wins,
+          Podiums,
+          Racer (id, Name),
+          Team (id, TeamName),
+          Seasons (id, Season)
+        `),
+      $fetch('/api/driver-avg-positions')
+    ])
     if (error) throw error
     racerSeasons.value = data || []
+    driverAvgPositions.value = avgPositions
   } catch (e) {
     console.error('Error fetching data:', e)
   } finally {
@@ -38,24 +43,6 @@ async function fetchData() {
 
 const driverCards = computed(() => {
   const statsMap = new Map()
-
-  const seasonDriverStandingsMap = new Map()
-  const bySeasonDriverMap = new Map()
-  racerSeasons.value.forEach(entry => {
-    const season = entry.Seasons?.Season
-    const racerId = entry.Racer?.id
-    if (!season || !racerId) return
-    if (!bySeasonDriverMap.has(season)) bySeasonDriverMap.set(season, new Map())
-    const sm = bySeasonDriverMap.get(season)
-    if (!sm.has(racerId)) sm.set(racerId, { racerId, points: 0, wins: 0 })
-    sm.get(racerId).points += entry.Points || 0
-    sm.get(racerId).wins += entry.Wins || 0
-  })
-  bySeasonDriverMap.forEach((sm, season) => {
-    Array.from(sm.values())
-      .sort((a, b) => b.points - a.points || b.wins - a.wins)
-      .forEach((e, i) => seasonDriverStandingsMap.set(`${season}-${e.racerId}`, i + 1))
-  })
 
   const seasonWinnerMap = new Map()
   racerSeasons.value.forEach(entry => {
@@ -110,15 +97,11 @@ const driverCards = computed(() => {
   })
 
   return Array.from(statsMap.values())
-    .map(d => {
-      const positions = Array.from(d.seasonsSet)
-        .map(season => seasonDriverStandingsMap.get(`${season}-${d.id}`))
-        .filter(p => p != null)
-      const avgPosition = positions.length
-        ? (positions.reduce((a, b) => a + b, 0) / positions.length).toFixed(2)
-        : null
-      return { ...d, seasonsRaced: d.seasonsSet.size, avgPosition }
-    })
+    .map(d => ({
+      ...d,
+      seasonsRaced: d.seasonsSet.size,
+      avgPosition: driverAvgPositions.value[d.id] ?? null
+    }))
 })
 
 const teamColors = {
@@ -182,6 +165,11 @@ const sortedDriverCards = computed(() => {
       case 'poles':   return b.totalPoles - a.totalPoles
       case 'points':  return b.totalPoints - a.totalPoints
       case 'titles':  return b.totalChampionships - a.totalChampionships
+      case 'avgPosition': {
+        const aVal = a.avgPosition != null ? parseFloat(a.avgPosition) : Infinity
+        const bVal = b.avgPosition != null ? parseFloat(b.avgPosition) : Infinity
+        return aVal - bVal
+      }
       default:        return b.totalWins - a.totalWins || b.totalPodiums - a.totalPodiums || b.totalPoints - a.totalPoints
     }
   })
@@ -209,6 +197,7 @@ onMounted(fetchData)
               { key: 'poles', label: 'Poles' },
               { key: 'points', label: 'Points' },
               { key: 'titles', label: 'Titles' },
+              { key: 'avgPosition', label: 'Avg Finish' },
             ]"
             :key="opt.key"
             @click="sortBy = opt.key"
@@ -269,7 +258,7 @@ onMounted(fetchData)
             <div class="flex justify-center">
               <span
                 v-if="driver.currentTeamName"
-                class="px-2 py-0.5 rounded text-xs font-bold"
+                class="px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap"
                 :style="getTeamStyle(driver.currentTeamName)"
               >{{ driver.currentTeamName }}</span>
             </div>
