@@ -137,6 +137,11 @@ const sortedTeamCards = computed(() => {
       case 'poles':   return b.totalPoles - a.totalPoles
       case 'points':  return b.totalPoints - a.totalPoints
       case 'titles':  return (b.totalChampionships + b.totalDriverChampionships) - (a.totalChampionships + a.totalDriverChampionships)
+      case 'avgPosition': {
+        const aVal = a.avgPosition != null ? parseFloat(a.avgPosition) : Infinity
+        const bVal = b.avgPosition != null ? parseFloat(b.avgPosition) : Infinity
+        return aVal - bVal
+      }
       default:        return b.totalWins - a.totalWins || b.totalPodiums - a.totalPodiums || b.totalPoints - a.totalPoints
     }
   })
@@ -224,6 +229,7 @@ onMounted(fetchData)
             { key: 'poles', label: 'Poles' },
             { key: 'points', label: 'Points' },
             { key: 'titles', label: 'Titles' },
+            { key: 'avgPosition', label: 'Avg Finish' },
           ]"
           :key="opt.key"
           @click="sortBy = opt.key"

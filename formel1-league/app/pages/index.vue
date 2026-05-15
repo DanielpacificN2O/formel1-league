@@ -653,10 +653,10 @@ onMounted(() => {
               <tr>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">#</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Grand Prix</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Polesitter</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Winner</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">P2</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">P3</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">Polesitter</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">Winner</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">P2</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">P3</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700">
@@ -669,16 +669,16 @@ onMounted(() => {
                   <div class="text-[10px] text-gray-400">{{ item.Track }}</div>
                   <div class="text-xs font-medium text-white">{{ item.GrandPrix }}</div>
                 </td>
-                <td class="px-4 py-3 whitespace-nowrap">
-                  <div class="text-sm font-medium text-white">{{ item.Polesitter?.Name || '—' }}</div>
-                  <span v-if="item.PolesitterTeam" class="px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap" :style="getTeamStyle(item.PolesitterTeam.TeamName)">{{ item.PolesitterTeam.TeamName }}</span>
+                <td class="px-4 py-3 whitespace-nowrap text-center">
+                  <div class="text-xs font-medium text-white">{{ item.Polesitter?.Name || '—' }}</div>
+                  <span v-if="item.PolesitterTeam" class="px-1 py-0 rounded text-[10px] font-semibold whitespace-nowrap" :style="getTeamStyle(item.PolesitterTeam.TeamName)">{{ item.PolesitterTeam.TeamName }}</span>
                 </td>
-                <td class="px-4 py-3 whitespace-nowrap">
+                <td class="px-4 py-3 whitespace-nowrap text-center">
                   <div class="text-sm font-medium text-white">{{ item.Winner?.Name || '—' }}</div>
                   <span v-if="item.WinnerTeam" class="px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap" :style="getTeamStyle(item.WinnerTeam.TeamName)">{{ item.WinnerTeam.TeamName }}</span>
                 </td>
-                <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-300">{{ item.P2?.Name || '—' }}</td>
-                <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-300">{{ item.P3?.Name || '—' }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-300 text-center">{{ item.P2?.Name || '—' }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-300 text-center">{{ item.P3?.Name || '—' }}</td>
               </tr>
             </tbody>
           </table>
