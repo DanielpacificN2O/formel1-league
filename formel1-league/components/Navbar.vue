@@ -71,7 +71,13 @@ const toggleMobileMenu = () => {
           >
             Team History
           </NuxtLink>
-          
+          <NuxtLink
+            to="/car-generations"
+            class="text-gray-300 hover:text-white transition-colors"
+            active-class="text-white font-semibold"
+          >
+            Car Generations
+          </NuxtLink>
 
         </div>
 
@@ -143,6 +149,14 @@ const toggleMobileMenu = () => {
           @click="mobileMenuOpen = false"
         >
           Track Profiles
+        </NuxtLink>
+        <NuxtLink
+          to="/car-generations"
+          class="block py-2 text-gray-300 hover:text-white transition-colors"
+          active-class="text-white font-semibold"
+          @click="mobileMenuOpen = false"
+        >
+          Car Generations
         </NuxtLink>
         <NuxtLink
           to="/all-time"
