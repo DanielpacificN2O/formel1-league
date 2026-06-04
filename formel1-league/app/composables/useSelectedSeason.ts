@@ -1,2 +1,2 @@
 export const useSelectedSeason = () =>
-  useState<string>('selectedSeason', () => 'S01')
+  useState<string>('selectedSeason', () => 'S29')

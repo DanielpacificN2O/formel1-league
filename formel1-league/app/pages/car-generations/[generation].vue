@@ -114,6 +114,86 @@ const gen = computed(() => GENERATIONS[slug.value] ?? null)
 const allPoints = ref([])
 const raceRows = ref([])
 const loading = ref(false)
+const teamSortBy = ref('wins')
+const driverSortBy = ref('wins')
+
+const driverRankings = computed(() => {
+  if (!gen.value) return []
+
+  const driverMap = new Map()
+  genPoints.value.forEach(e => {
+    const driverId = e.Racer?.id
+    const driverName = e.Racer?.Name
+    if (!driverId) return
+    if (!driverMap.has(driverId)) {
+      driverMap.set(driverId, { driverId, driverName, wins: 0, podiums: 0, poles: 0, points: 0, bestFinish: Infinity, titleCount: 0 })
+    }
+    const d = driverMap.get(driverId)
+    d.wins    += e.Wins    || 0
+    d.podiums += e.Podiums || 0
+    d.poles   += e.Poles   || 0
+    d.points  += e.Points  || 0
+  })
+
+  gen.value.seasons.forEach(season => {
+    const rows = genPoints.value.filter(e => e.Seasons?.Season === season)
+    const driverPts = new Map()
+    rows.forEach(e => {
+      const dId = e.Racer?.id
+      if (dId) driverPts.set(dId, (driverPts.get(dId) || 0) + (e.Points || 0))
+    })
+    if (driverPts.size) {
+      const standings = [...driverPts.entries()].sort((a, b) => b[1] - a[1])
+      standings.forEach(([dId], idx) => {
+        if (!driverMap.has(dId)) return
+        const pos = idx + 1
+        const d = driverMap.get(dId)
+        if (pos < d.bestFinish) d.bestFinish = pos
+        if (pos === 1) d.titleCount += 1
+      })
+    }
+  })
+
+  return [...driverMap.values()]
+})
+
+const sortedDriverRankings = computed(() => {
+  const desc = (a, b, k) => b[k] - a[k]
+  return [...driverRankings.value].sort((a, b) => {
+    const key = driverSortBy.value
+
+    if (key === 'bestFinish') {
+      const pa = a.bestFinish === Infinity ? 9999 : a.bestFinish
+      const pb = b.bestFinish === Infinity ? 9999 : b.bestFinish
+      if (pa !== pb) return pa - pb
+      let r = desc(a, b, 'wins');    if (r !== 0) return r
+          r = desc(a, b, 'podiums'); if (r !== 0) return r
+      return desc(a, b, 'points')
+    }
+
+    let r = b[key] - a[key]
+    if (r !== 0) return r
+
+    if (key === 'wins') {
+      r = desc(a, b, 'podiums'); if (r !== 0) return r
+      return desc(a, b, 'points')
+    }
+    if (key === 'podiums') {
+      r = desc(a, b, 'wins'); if (r !== 0) return r
+      return desc(a, b, 'points')
+    }
+    if (key === 'poles') {
+      r = desc(a, b, 'wins');    if (r !== 0) return r
+      r = desc(a, b, 'podiums'); if (r !== 0) return r
+      return desc(a, b, 'points')
+    }
+    if (key === 'points') {
+      r = desc(a, b, 'wins'); if (r !== 0) return r
+      return desc(a, b, 'podiums')
+    }
+    return 0
+  })
+})
 
 async function fetchData() {
   if (!gen.value) return
@@ -219,6 +299,102 @@ const seasonChampions = computed(() => {
       const [team] = teamEntries[0] ?? ['—']
       return { season: s, driver, team }
     })
+})
+
+const teamRankings = computed(() => {
+  if (!gen.value) return []
+
+  const teamMap = new Map()
+  genPoints.value.forEach(e => {
+    const teamId = e.Team?.id
+    const teamName = e.Team?.TeamName
+    if (!teamId) return
+    if (!teamMap.has(teamId)) {
+      teamMap.set(teamId, { teamId, teamName, wins: 0, podiums: 0, poles: 0, points: 0, bestTeamFinish: Infinity, teamTitleCount: 0, bestDriverFinish: Infinity, driverTitleCount: 0 })
+    }
+    const t = teamMap.get(teamId)
+    t.wins    += e.Wins     || 0
+    t.podiums += e.Podiums  || 0
+    t.poles   += e.Poles    || 0
+    t.points  += e.Points   || 0
+  })
+
+  gen.value.seasons.forEach(season => {
+    const rows = genPoints.value.filter(e => e.Seasons?.Season === season)
+
+    const teamPts = new Map()
+    rows.forEach(e => {
+      const tId = e.Team?.id
+      if (tId) teamPts.set(tId, (teamPts.get(tId) || 0) + (e.Points || 0))
+    })
+    if (teamPts.size) {
+      [...teamPts.entries()].sort((a, b) => b[1] - a[1]).forEach(([tId], idx) => {
+        if (!teamMap.has(tId)) return
+        const pos = idx + 1
+        const t = teamMap.get(tId)
+        if (pos < t.bestTeamFinish) t.bestTeamFinish = pos
+        if (pos === 1) t.teamTitleCount += 1
+      })
+    }
+
+    const driverPts = new Map()
+    rows.forEach(e => {
+      const dId = e.Racer?.id
+      if (dId) driverPts.set(dId, (driverPts.get(dId) || 0) + (e.Points || 0))
+    })
+    if (driverPts.size) {
+      [...driverPts.entries()].sort((a, b) => b[1] - a[1]).forEach(([dId], idx) => {
+        const pos = idx + 1
+        const dRow = rows.find(e => e.Racer?.id === dId)
+        const tId = dRow?.Team?.id
+        if (tId && teamMap.has(tId)) {
+          const t = teamMap.get(tId)
+          if (pos < t.bestDriverFinish) t.bestDriverFinish = pos
+          if (pos === 1) t.driverTitleCount += 1
+        }
+      })
+    }
+  })
+
+  return [...teamMap.values()]
+})
+
+const sortedTeamRankings = computed(() => {
+  const desc = (a, b, k) => b[k] - a[k]
+  return [...teamRankings.value].sort((a, b) => {
+    const key = teamSortBy.value
+
+    if (key === 'bestTeamFinish' || key === 'bestDriverFinish') {
+      const pa = a[key] === Infinity ? 9999 : a[key]
+      const pb = b[key] === Infinity ? 9999 : b[key]
+      if (pa !== pb) return pa - pb
+      let r = desc(a, b, 'wins');    if (r !== 0) return r
+          r = desc(a, b, 'podiums'); if (r !== 0) return r
+      return desc(a, b, 'points')
+    }
+
+    let r = b[key] - a[key]
+    if (r !== 0) return r
+
+    if (key === 'wins') {
+      r = desc(a, b, 'podiums'); if (r !== 0) return r
+      return desc(a, b, 'points')
+    }
+    if (key === 'podiums') {
+      r = desc(a, b, 'wins'); if (r !== 0) return r
+      return desc(a, b, 'points')
+    }
+    if (key === 'poles') {
+      r = desc(a, b, 'wins');    if (r !== 0) return r
+      r = desc(a, b, 'podiums'); if (r !== 0) return r
+      return desc(a, b, 'points')
+    }
+    if (key === 'points') {
+      r = desc(a, b, 'wins'); if (r !== 0) return r
+      return desc(a, b, 'podiums')
+    }
+    return 0
+  })
 })
 
 onMounted(fetchData)
@@ -354,6 +530,89 @@ onMounted(fetchData)
                 <span class="text-gray-400">{{ row.season }}</span>
                 <span class="text-white font-semibold">{{ row.driver }}</span>
                 <span class="text-gray-300">{{ row.team }}</span>
+              </li>
+            </ul>
+          </template>
+          <p v-else class="text-gray-400 text-sm">No data yet</p>
+        </div>
+      </div>
+
+      <!-- Driver Rankings box -->
+      <div class="bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700 mb-6">
+        <div class="bg-slate-700 px-6 py-3 border-b border-slate-600">
+          <h2 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Driver Rankings</h2>
+        </div>
+        <div class="p-6">
+          <div v-if="loading" class="text-gray-400 text-sm">Loading...</div>
+          <template v-else-if="sortedDriverRankings.length">
+            <div class="grid grid-cols-8 gap-2 mb-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
+              <span>#</span>
+              <span class="col-span-2">Driver</span>
+              <span
+                v-for="col in ['wins','podiums','poles','points','bestFinish']"
+                :key="col"
+                class="cursor-pointer hover:text-gray-200 transition-colors text-right"
+                :class="{ 'text-white': driverSortBy === col }"
+                @click="driverSortBy = col"
+              >
+                {{ col === 'bestFinish' ? 'Best' : col.charAt(0).toUpperCase() + col.slice(1) }}
+              </span>
+            </div>
+            <ul class="space-y-1.5">
+              <li
+                v-for="(driver, i) in sortedDriverRankings"
+                :key="driver.driverId"
+                class="grid grid-cols-8 gap-2 items-center text-sm"
+              >
+                <span class="text-gray-500">{{ i + 1 }}</span>
+                <span class="col-span-2 text-white font-semibold truncate">{{ driver.driverName }}</span>
+                <span class="text-right" :class="driverSortBy === 'wins'    ? 'text-white' : 'text-gray-300'">{{ driver.wins }}</span>
+                <span class="text-right" :class="driverSortBy === 'podiums' ? 'text-white' : 'text-gray-300'">{{ driver.podiums }}</span>
+                <span class="text-right" :class="driverSortBy === 'poles'   ? 'text-white' : 'text-gray-300'">{{ driver.poles }}</span>
+                <span class="text-right" :class="driverSortBy === 'points'  ? 'text-white' : 'text-gray-300'">{{ driver.points }}</span>
+                <span class="text-right" :class="driverSortBy === 'bestFinish' ? 'text-white' : 'text-gray-300'">{{ driver.bestFinish === Infinity ? '—' : driver.bestFinish === 1 ? (driver.titleCount > 1 ? `${driver.titleCount}x ` : '') + '🏆' : `P${driver.bestFinish}` }}</span>
+              </li>
+            </ul>
+          </template>
+          <p v-else class="text-gray-400 text-sm">No data yet</p>
+        </div>
+      </div>
+
+      <!-- Team Rankings box -->
+      <div class="bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700 mb-6">
+        <div class="bg-slate-700 px-6 py-3 border-b border-slate-600">
+          <h2 class="text-xs font-bold text-gray-300 uppercase tracking-widest">Team Rankings</h2>
+        </div>
+        <div class="p-6">
+          <div v-if="loading" class="text-gray-400 text-sm">Loading...</div>
+          <template v-else-if="sortedTeamRankings.length">
+            <div class="grid grid-cols-9 gap-2 mb-2 text-xs font-bold text-gray-400 uppercase tracking-widest">
+              <span>#</span>
+              <span class="col-span-2">Team</span>
+              <span
+                v-for="col in ['wins','podiums','poles','points','bestTeamFinish','bestDriverFinish']"
+                :key="col"
+                class="cursor-pointer hover:text-gray-200 transition-colors text-right"
+                :class="{ 'text-white': teamSortBy === col }"
+                @click="teamSortBy = col"
+              >
+                {{ col === 'bestTeamFinish' ? 'T.Best' : col === 'bestDriverFinish' ? 'D.Best' : col.charAt(0).toUpperCase() + col.slice(1) }}
+              </span>
+            </div>
+            <ul class="space-y-1.5">
+              <li
+                v-for="(team, i) in sortedTeamRankings"
+                :key="team.teamId"
+                class="grid grid-cols-9 gap-2 items-center text-sm"
+              >
+                <span class="text-gray-500">{{ i + 1 }}</span>
+                <span class="col-span-2 text-white font-semibold truncate">{{ team.teamName }}</span>
+                <span class="text-right" :class="teamSortBy === 'wins'    ? 'text-white' : 'text-gray-300'">{{ team.wins }}</span>
+                <span class="text-right" :class="teamSortBy === 'podiums' ? 'text-white' : 'text-gray-300'">{{ team.podiums }}</span>
+                <span class="text-right" :class="teamSortBy === 'poles'   ? 'text-white' : 'text-gray-300'">{{ team.poles }}</span>
+                <span class="text-right" :class="teamSortBy === 'points'  ? 'text-white' : 'text-gray-300'">{{ team.points }}</span>
+                <span class="text-right" :class="teamSortBy === 'bestTeamFinish'   ? 'text-white' : 'text-gray-300'">{{ team.bestTeamFinish   === Infinity ? '—' : team.bestTeamFinish   === 1 ? (team.teamTitleCount   > 1 ? `${team.teamTitleCount}x `   : '') + '🏆' : `P${team.bestTeamFinish}` }}</span>
+                <span class="text-right" :class="teamSortBy === 'bestDriverFinish' ? 'text-white' : 'text-gray-300'">{{ team.bestDriverFinish === Infinity ? '—' : team.bestDriverFinish === 1 ? (team.driverTitleCount > 1 ? `${team.driverTitleCount}x ` : '') + '🏆' : `P${team.bestDriverFinish}` }}</span>
               </li>
             </ul>
           </template>
