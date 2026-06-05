@@ -60,11 +60,17 @@ const GENERATIONS = {
     regulations: [
       'Placeholder regulation.',
     ],
-    carStats: [
-      'Placeholder stat — e.g. Wheelbase: 2800mm',
+    regulations: [
+      'Engine: 3.5 Liters, Naturally Aspirated, Rev limit 15,000 RPM',
+      'Minimum car weight: 450kg without driver',
+      'Max car width: 2150mm',
+      'Aero: Front wing 1400mm, rear wing 1000mm',
     ],
-    lore: [
-      'Placeholder lore for Generation 3.',
+    carStats: [
+      'Max power: 900hp',
+      '0-100 km/h: 2.5 seconds',
+      'Top speed: 370 km/h',
+      'Cornering Force: 4.5G',
     ],
   },
   gen4: {
