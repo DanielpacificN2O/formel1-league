@@ -37,10 +37,16 @@ const GENERATIONS = {
     range: 'S05 – S09',
     tagline: 'Placeholder tagline for Generation 2',
     regulations: [
-      'Placeholder regulation.',
+      'Engine: 1.5 Liters, Turbocharged, Rev limit 12,000 RPM',
+      'Minimum car weight: 420kg without driver',
+      'Max car width: 1900mm',
+      'Aero: Front wing 1500mm, rear wing 1000mm',
     ],
     carStats: [
-      'Placeholder stat — e.g. Wheelbase: 2800mm',
+      'Max power: 2000hp in quali, 1200 in races',
+      '0-100 km/h: 2.5 seconds',
+      'Top speed: 380 km/h',
+      'Cornering Force: 4G',
     ],
     lore: [
       'Placeholder lore for Generation 2.',
@@ -270,6 +276,21 @@ const mostPoles = computed(() => {
   return { names: sorted.filter(d => d.poles === top).map(d => d.name).join(', '), poles: top }
 })
 
+const winPct = computed(() => {
+  const rc = raceCount.value
+  return rc > 0 && mostWins.value ? Math.round((mostWins.value.wins / rc) * 1000) / 10 : null
+})
+
+const podiumPct = computed(() => {
+  const rc = raceCount.value
+  return rc > 0 && mostPodiums.value ? Math.round((mostPodiums.value.podiums / rc) * 1000) / 10 : null
+})
+
+const polePct = computed(() => {
+  const rc = raceCount.value
+  return rc > 0 && mostPoles.value ? Math.round((mostPoles.value.poles / rc) * 1000) / 10 : null
+})
+
 const seasonChampions = computed(() => {
   if (!gen.value) return []
   const driverMap = new Map()
@@ -445,7 +466,7 @@ onMounted(fetchData)
               <template v-else-if="mostWins">
                 <div class="text-xs text-gray-400 uppercase tracking-widest">Most Wins</div>
                 <div class="text-lg font-bold text-white leading-tight mt-1">{{ mostWins.names }}</div>
-                <div class="text-sm text-gray-300 mt-0.5">{{ mostWins.wins }} wins</div>
+                <div class="text-sm text-gray-300 mt-0.5">{{ mostWins.wins }} wins<span v-if="winPct !== null" class="text-gray-400"> ({{ winPct }}%)</span></div>
               </template>
               <template v-else>
                 <div class="text-xs text-gray-400 uppercase tracking-widest">Most Wins</div>
@@ -460,7 +481,7 @@ onMounted(fetchData)
               <template v-else-if="mostPodiums">
                 <div class="text-xs text-gray-400 uppercase tracking-widest">Most Podiums</div>
                 <div class="text-lg font-bold text-white leading-tight mt-1">{{ mostPodiums.names }}</div>
-                <div class="text-sm text-gray-300 mt-0.5">{{ mostPodiums.podiums }} podiums</div>
+                <div class="text-sm text-gray-300 mt-0.5">{{ mostPodiums.podiums }} podiums<span v-if="podiumPct !== null" class="text-gray-400"> ({{ podiumPct }}%)</span></div>
               </template>
               <template v-else>
                 <div class="text-xs text-gray-400 uppercase tracking-widest">Most Podiums</div>
@@ -475,7 +496,7 @@ onMounted(fetchData)
               <template v-else-if="mostPoles">
                 <div class="text-xs text-gray-400 uppercase tracking-widest">Most Poles</div>
                 <div class="text-lg font-bold text-white leading-tight mt-1">{{ mostPoles.names }}</div>
-                <div class="text-sm text-gray-300 mt-0.5">{{ mostPoles.poles }} poles</div>
+                <div class="text-sm text-gray-300 mt-0.5">{{ mostPoles.poles }} poles<span v-if="polePct !== null" class="text-gray-400"> ({{ polePct }}%)</span></div>
               </template>
               <template v-else>
                 <div class="text-xs text-gray-400 uppercase tracking-widest">Most Poles</div>
