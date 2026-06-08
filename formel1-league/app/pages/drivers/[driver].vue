@@ -358,6 +358,49 @@ const seasonRows = computed(() =>
   })
 )
 
+const careerTimeline = computed(() => {
+  const driverEntry = new Map()
+  driverSeasons.value.forEach(entry => {
+    const s = entry.Seasons?.Season
+    if (s) driverEntry.set(s, {
+      teamName: entry.Team?.TeamName || null,
+      teamId:   entry.Team?.id       || null,
+    })
+  })
+
+  const teamSeasonDrivers = new Map()
+  allPoints.value.forEach(entry => {
+    const s    = entry.Seasons?.Season
+    const tId  = entry.Team?.id
+    const name = entry.Racer?.Name
+    if (!s || !tId || !name) return
+    const key = `${s}-${tId}`
+    if (!teamSeasonDrivers.has(key)) teamSeasonDrivers.set(key, [])
+    teamSeasonDrivers.get(key).push(name)
+  })
+
+  const slots = []
+  for (let i = 1; i <= 29; i++) {
+    const label = `S${String(i).padStart(2, '0')}`
+    const driverData = driverEntry.get(label)
+    if (!driverData) {
+      slots.push({ season: label, seasonNum: i, active: false })
+      continue
+    }
+    const { teamName, teamId } = driverData
+    const allTeammates = teamSeasonDrivers.get(`${label}-${teamId}`) || []
+    const teammates = allTeammates.filter(n => n !== driverName.value)
+    slots.push({ season: label, seasonNum: i, active: true, teamName, teammates })
+  }
+  return slots
+})
+
+function abbrevTeam(name) {
+  if (!name) return '?'
+  const parts = name.split(' ')
+  return parts.length === 1 ? name.slice(0, 7) : parts[0].slice(0, 7)
+}
+
 const avgChampionshipPosition = computed(() => {
   const racerId = driverSeasons.value[0]?.Racer?.id
   if (!racerId) return null
@@ -442,6 +485,42 @@ onMounted(fetchData)
           </div>
           <div v-if="careerTotals.championshipSeasons.length > 0" class="mt-4 text-yellow-400 text-sm">
             🏆 {{ careerTotals.championshipSeasons.sort().join(', ') }}
+          </div>
+        </div>
+
+        <!-- Career Timeline -->
+        <div class="bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700 mb-6">
+          <div class="bg-slate-700 px-4 py-3 border-b border-slate-600">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Career Timeline</h3>
+          </div>
+          <div class="overflow-x-auto px-4 py-4">
+            <div class="flex gap-1 min-w-max">
+              <div
+                v-for="slot in careerTimeline"
+                :key="slot.season"
+                class="flex flex-col items-center w-[52px] flex-shrink-0"
+              >
+                <span class="text-[9px] font-mono text-gray-500 mb-1">S{{ slot.seasonNum }}</span>
+                <template v-if="slot.active">
+                  <div
+                    class="w-full h-1 rounded-sm mb-1"
+                    :style="{ backgroundColor: (teamColors[slot.teamName] || {}).bg || '#4b5563' }"
+                  ></div>
+                  <span
+                    class="px-1 py-0.5 rounded text-[8px] font-semibold w-full text-center truncate leading-tight mb-1"
+                    :style="getTeamStyle(slot.teamName)"
+                  >{{ abbrevTeam(slot.teamName) }}</span>
+                  <span class="text-[8px] text-gray-400 text-center leading-tight truncate w-full">
+                    <template v-if="slot.teammates.length === 0">—</template>
+                    <template v-else>{{ slot.teammates.map(n => n.split(' ')[0]).join('/') }}</template>
+                  </span>
+                </template>
+                <template v-else>
+                  <div class="w-full h-1 rounded-sm bg-slate-700 mb-1"></div>
+                  <span class="text-[8px] text-slate-600 w-full text-center">–</span>
+                </template>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -698,6 +777,7 @@ onMounted(fetchData)
   </div>
 
 </div>
+
         </div>
 
         <!-- Bottom row: season table left, race wins/poles right -->
